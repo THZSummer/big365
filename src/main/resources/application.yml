@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    druid:
+      type: com.alibaba.druid.pool.DruidDataSource
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      username: bigdata365
+      password: bigdata365
+      # ?serverTimezone=UTC解决时区的报错
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/bigdata365?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
+      driverClass: com.mysql.cj.jdbc.Driver
+      passwordCallbackClassName: com.com.mlj.share.bigdata365.config.DruidCustomPasswordCallback
+      # Spring Boot 默认是不注入这些属性值的，需要自己绑定
+      # druid 数据源专有配置
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1 FROM DUAL
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      # 配置监控统计拦截的filters，stat:监控统计、log4j：日志记录、wall：防御sql注入
+      # 如果允许时报错  java.lang.ClassNotFoundException: org.apache.log4j.Priority
+      # 则导入 log4j 依赖即可，Maven 地址：https://mvnrepository.com/artifact/log4j/log4j
+      max-pool-prepared-statement-per-connection-size: 20
+      use-global-data-source-stat: true
+      filter:
+        stat:
+        merge-sql: true
+        slow-sql-millis: 50
+      proxy-filters: stat,wall,log4j
+      connect-properties: 
+        password: YmlnZGF0YTM2NQ==
+
+server:
+  port: 8081
+  servlet:
+    context-path: /bigdata365
+
+
+# 配置mybaits
+mybatis:
+  mapper-locations: classpath:/mybatis/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
