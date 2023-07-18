@@ -1,5 +1,6 @@
 package com.mlj.share.bigdata365.controller;
 
+import com.mlj.share.bigdata365.mapper.Bigdata365InitMapper;
 import com.mlj.share.bigdata365.service.Bigdata365ServiceI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,8 @@ public class Bigdata365Controller {
 
 
     Bigdata365ServiceI bigdata365ServiceI;
+
+    Bigdata365InitMapper bigdata365InitMapper;
 
     @GetMapping("/s/list")
     public List<Map<String, Object>> list() {
@@ -42,5 +45,10 @@ public class Bigdata365Controller {
     @Autowired
     public void setBigdata365ServiceI(Bigdata365ServiceI bigdata365ServiceI) {
         this.bigdata365ServiceI = bigdata365ServiceI;
+    }
+
+    @Autowired
+    public void setBigdata365InitMapper(Bigdata365InitMapper bigdata365InitMapper) {
+        this.bigdata365InitMapper = bigdata365InitMapper;
     }
 }

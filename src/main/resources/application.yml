@@ -43,6 +43,6 @@ server:
 
 # 配置mybaits
 mybatis:
-  mapper-locations: classpath:/mybatis/mapper/*.xml
+  mapper-locations: classpath:/mybatis/mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: true

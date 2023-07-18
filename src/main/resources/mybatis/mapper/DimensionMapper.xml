@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mlj.share.bigdata365.mapper.DimensionMapper">
+
+    <resultMap id="dimensionRMap" type="com.mlj.share.bigdata365.bean.Dimension">
+        <result property="dimensionPid" column="dimensionpid"/>
+        <result property="innerName" column="innerName"/>
+        <result property="outerName" column="outerName"/>
+        <result property="aliasName" column="aliasName"/>
+        <result property="createBy" column="createBy"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateBy" column="updateBy"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.mlj.share.bigdata365.bean.Dimension" useGeneratedKeys="true">
+        INSERT INTO `big365_dimension` (innername, outtername, aliasname, createby, createtime, updateby, updatetime)
+        VALUES (#{innerName}, #{outerName}, #{aliasName}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
+    </insert>
+
+    <update id="update" parameterType="com.mlj.share.bigdata365.bean.Dimension">
+        UPDATE `big365_dimension`
+        <set>
+            <if test="innerName != null">
+                innername = #{innerName, jdbcType=VARCHAR}
+            </if>
+            <if test="outerName != null">
+                outername = #{outerName, jdbcType=VARCHAR}
+            </if>
+            <if test="aliasName != null">
+                aliasname = #{aliasName, jdbcType=VARCHAR}
+            </if>
+            <if test="createBy != null">
+                createby = #{createBy, jdbcType=VARCHAR}
+            </if>
+            <if test="createTime != null">
+                createtime = #{createTime, jdbcType=VARCHAR}
+            </if>
+            <if test="updateBy != null">
+                updateby = #{updateBy, jdbcType=VARCHAR}
+            </if>
+            <if test="updateTime != null">
+                updatetime = #{updateTime, jdbcType=VARCHAR}
+            </if>
+        </set>
+        WHERE dimensionpid = #{dimensionPid, jdbcType=VARCHAR}
+    </update>
+
+    <sql id="selectCol">
+        SELECT dimensionpid,
+               innername,
+               outtername,
+               aliasname,
+               createby,
+               createtime,
+               updateby,
+               updatetime
+        FROM big365_dimension
+    </sql>
+
+    <sql id="whereParam">
+        <where>
+            <if test="dimensionPid != null">
+                dimensionpid = #{dimensionPid, jdbcType=VARCHAR}
+            </if>
+            <if test="innerName != null">
+                innername = #{innerName, jdbcType=VARCHAR}
+            </if>
+            <if test="outerName != null">
+                outername = #{outerName, jdbcType=VARCHAR}
+            </if>
+            <if test="aliasName != null">
+                aliasname = #{aliasName, jdbcType=VARCHAR}
+            </if>
+            <if test="createBy != null">
+                createby = #{createBy, jdbcType=VARCHAR}
+            </if>
+            <if test="createTime != null">
+                createtime = #{createTime, jdbcType=VARCHAR}
+            </if>
+            <if test="updateBy != null">
+                updateby = #{updateBy, jdbcType=VARCHAR}
+            </if>
+            <if test="updateTime != null">
+                updatetime = #{updateTime, jdbcType=VARCHAR}
+            </if>
+        </where>
+    </sql>
+
+    <select id="select" resultMap="dimensionRMap" parameterType="com.mlj.share.bigdata365.bean.Dimension">
+        <include refid="selectCol"/>
+        <include refid="whereParam"/>
+    </select>
+
+    <select id="selectByPid" resultMap="dimensionRMap" parameterType="java.lang.String">
+        <include refid="selectCol"/>
+        WHERE dimensionpid = #{pid, jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectList" resultMap="dimensionRMap" parameterType="com.mlj.share.bigdata365.bean.Dimension">
+        <include refid="selectCol"/>
+        <include refid="whereParam"/>
+    </select>
+</mapper>
