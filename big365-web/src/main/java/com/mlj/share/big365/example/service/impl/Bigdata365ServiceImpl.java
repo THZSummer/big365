@@ -1,0 +1,31 @@
+package com.mlj.share.big365.example.service.impl;
+
+import com.mlj.share.big365.example.mapper.Bigdata365Mapper;
+import com.mlj.share.big365.example.mapper.DimensionMapper;
+import com.mlj.share.big365.example.service.Bigdata365ServiceI;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class Bigdata365ServiceImpl implements Bigdata365ServiceI {
+
+    @Autowired
+    Bigdata365Mapper bigdata365Mapper;
+
+    @Autowired
+    DimensionMapper dimensionMapper;
+
+
+    @Override
+    public List<Map<String, Object>> list() {
+        return bigdata365Mapper.list();
+    }
+
+    @Override
+    public Map<String, Object> findOne(int id) {
+        return bigdata365Mapper.findOne(id);
+    }
+}
