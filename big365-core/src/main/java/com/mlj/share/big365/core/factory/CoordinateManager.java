@@ -1,6 +1,6 @@
 package com.mlj.share.big365.core.factory;
 
-import com.mlj.share.big365.core.entries.Coordinate;
+import com.mlj.share.big365.core.entries.CoordinateO;
 
 public interface CoordinateManager {
 
@@ -10,5 +10,5 @@ public interface CoordinateManager {
      * @param val 维度坐标值
      * @return 维度坐标
      */
-    Coordinate parseFromString(String dimension, String val);
+    CoordinateO parseFromString(String dimension, String val);
 }

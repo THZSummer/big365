@@ -1,6 +1,6 @@
 package com.mlj.share.big365.core.entries;
 
-public class Coordinate {
+public class CoordinateO {
 
     private String dimension;
 

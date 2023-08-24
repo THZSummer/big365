@@ -7,7 +7,7 @@ import java.util.List;
 
 @Setter
 @Getter
-public class Vector {
+public class VectorO {
 
-    private List<Coordinate> vectorCoordinate;
+    private List<CoordinateO> vectorCoordinateO;
 }
