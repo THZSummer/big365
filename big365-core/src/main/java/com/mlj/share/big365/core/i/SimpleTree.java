@@ -3,6 +3,7 @@ package com.mlj.share.big365.core.i;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class SimpleTree<E> implements Tree<E> {
 
@@ -64,7 +65,7 @@ public class SimpleTree<E> implements Tree<E> {
 
     @Override
     public List<List<E>> tileTree() {
-        return doTileTree();
+        return this.doTileTree();
     }
 
     private List<List<E>> doTileTree() {
@@ -105,5 +106,29 @@ public class SimpleTree<E> implements Tree<E> {
         }
 
         return listList;
+    }
+
+
+    @Override
+    public void taleTree(Consumer<List<E>> consumer) {
+        this.doTileTrees(Collections.emptyList(), consumer);
+    }
+
+    private void doTileTrees(List<E> prevList, Consumer<List<E>> consumer) {
+
+        List<E> leftList = new ArrayList<>(prevList);
+        if (null != this.left) {
+            leftList.add(this.left.element);
+            this.left.doTileTrees(leftList, consumer);
+        } else {
+            consumer.accept(leftList);
+        }
+
+        List<E> rightList = new ArrayList<>(prevList);
+
+        if (null != this.right) {
+            rightList.add(this.right.element);
+            this.right.doTileTrees(rightList, consumer);
+        }
     }
 }

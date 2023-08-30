@@ -1,6 +1,7 @@
 package com.mlj.share.big365.core.i;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public interface Tree<T> {
 
@@ -23,4 +24,6 @@ public interface Tree<T> {
     void setRight(T t);
 
     List<List<T>> tileTree();
+
+    void taleTree(Consumer<List<T>> consumer);
 }
