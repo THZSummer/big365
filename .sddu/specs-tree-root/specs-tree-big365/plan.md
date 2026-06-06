@@ -129,25 +129,25 @@ flowchart LR
 #### 维度 CRUD 数据流
 
 ```text
-HTTP Request -> DimensionController -> DimensionService -> DimensionRepository -> MyBatis Mapper -> big365_{业务名}_dimensions_t
+HTTP Request -> DimensionController -> DimensionService -> DimensionRepository -> MyBatis Mapper -> big365_swks_{业务名}_dimensions_t
 ```
 
 #### 立方体写入数据流
 
 ```text
-HTTP Request -> CubeController -> CubeService -> 坐标校验 -> 级联 UPDATE big365_{业务名}_cube_t（2^d 行）
+HTTP Request -> CubeController -> CubeService -> 坐标校验 -> 级联 UPDATE big365_swks_{业务名}_cube_t（2^d 行）
 ```
 
 #### 立方体查询数据流
 
 ```text
-HTTP Request -> CubeController -> 坐标解析 -> SELECT 指标列 FROM big365_{业务名}_cube_t（1 行读取）
+HTTP Request -> CubeController -> 坐标解析 -> SELECT 指标列 FROM big365_swks_{业务名}_cube_t（1 行读取）
 ```
 
 #### 演示数据生成数据流
 
 ```text
-POST /api/demo-data/jobs -> 创建 job -> 后台线程执行生成 -> 批量写入 big365_{业务名}_cube_t（级联更新） -> 更新 job 状态 -> GET job 查询进度
+POST /api/demo-data/jobs -> 创建 job -> 后台线程执行生成 -> 批量写入 big365_swks_{业务名}_cube_t（级联更新） -> 更新 job 状态 -> GET job 查询进度
 ```
 
 ### 2.5 依赖关系图
@@ -271,11 +271,11 @@ org.big365.api.config      # Spring / OpenAPI / Async / Web 配置
 
 数据库设计的深度分析单独沉淀在 [`plan-db.md`](plan-db.md)。该文档深度分析了 `bigdata_365` 作为预计算物化立方体的核心思想（0=ALL 哨兵、级联写入 2^d 行、零计算查询），以及每个业务独立坐标表+独立维度表的多业务隔离模式。
 
-MVP 直接继承原始设计的全套核心机制。表命名规范为 `big365_{业务名}_{功能}_t`，新业务接入时通过 API 动态创建全套表。
+MVP 直接继承原始设计的全套核心机制。表命名规范：业务表为 `big365_swks_{业务名}_{功能}_t`，系统表为 `big365_swks_{功能}_t`（不带 swks 即系统级）。新业务接入时通过 API 动态创建全套业务表。
 
 以首版业务 `log_monitor`（日志分析）为例：
 
-#### `big365_log_monitor_dimensions_t`（维度元数据表）
+#### `big365_swks_log_monitor_dimensions_t`（维度元数据表）
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -289,7 +289,7 @@ MVP 直接继承原始设计的全套核心机制。表命名规范为 `big365_{
 | `enabled` | tinyint | 是否启用 |
 | `created_at` / `updated_at` | datetime | 审计字段 |
 
-#### `big365_log_monitor_cube_t`（物化立方体数据表）
+#### `big365_swks_log_monitor_cube_t`（物化立方体数据表）
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -309,7 +309,7 @@ MVP 直接继承原始设计的全套核心机制。表命名规范为 `big365_{
 
 ```sql
 -- app=3, endpoint=7, status_code=500, env=prod, region=cn-east，日期 20260101，+100
-UPDATE big365_log_monitor_cube_t SET `20260101` = `20260101` + 100
+UPDATE big365_swks_log_monitor_cube_t SET `20260101` = `20260101` + 100
 WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 -- 32 行同时更新
 ```
@@ -318,11 +318,11 @@ WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 
 ```sql
 -- Grand Total
-SELECT `20260101` FROM big365_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
+SELECT `20260101` FROM big365_swks_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
 -- 一行返回，零聚合
 ```
 
-#### `big365_log_monitor_demo_jobs_t`（演示数据生成任务表）
+#### `big365_swks_log_monitor_demo_jobs_t`（演示数据生成任务表）
 
 统一前缀：`/api`
 
@@ -704,7 +704,7 @@ big365-api/src/main/resources/db/
 `@sddu-tasks big365` 应将本计划拆分为可并行任务，建议按以下工作流分组：
 
 1. 历史资产归档、`big365-api` / `big365-web` 工程骨架与根级 Compose 基础。
-2. 后端数据库：表命名规范 `big365_{业务名}_{功能}_t`，实现按业务动态建表，统一响应、异常、OpenAPI。
+2. 后端数据库：表命名规范 `big365_swks_{业务名}_{功能}_t`，实现按业务动态建表，统一响应、异常、OpenAPI。
 3. 维度元数据 CRUD 垂直切片。
 4. 立方体写入与查询垂直切片（坐标写入 + 级联更新 + 坐标查询）。
 5. 演示数据生成垂直切片（批量生成坐标数据、写入 cube 表）。

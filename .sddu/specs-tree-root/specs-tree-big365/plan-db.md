@@ -202,7 +202,7 @@ a = 0                     -- 哨兵值，代表「所有 a」
 └────────────────────────────────────┘
 
 ┌─ 维度元数据表 ──────────────────────┐
-│ CREATE TABLE big365_{业务名}_dim (   │
+│ CREATE TABLE big365_swks_{业务名}_dim (   │
 │   id          INT AUTO_INCREMENT,    │
 │   column_name VARCHAR(64),           │
 │   display_name VARCHAR(128),         │
@@ -223,7 +223,7 @@ a = 0                     -- 哨兵值，代表「所有 a」
   不同业务的列名含义不同，不能混在同一张表。
 
 独立维度表的好处：
-  big365_log_monitor_dim:
+  big365_swks_log_monitor_dim:
     column_name='app',       display_name='应用',     value_range='1~10'
     column_name='endpoint',  display_name='接口',     value_range='1~100'
     ...
@@ -238,8 +238,8 @@ a = 0                     -- 哨兵值，代表「所有 a」
 
 ```text
 当前 MVP 首版只接入一个业务（日志分析），所以：
-  - 新建坐标数据表：big365_log_monitor_cube_t（物化立方体）
-  - 新建维度元数据表：big365_log_monitor_dimensions_t（独立维度表）
+  - 新建坐标数据表：big365_swks_log_monitor_cube_t（物化立方体）
+  - 新建维度元数据表：big365_swks_log_monitor_dimensions_t（独立维度表）
 
 后续接入第二个业务时：
   - big365-api 自动创建 big365_{业务2}_cube_t、big365_{业务2}_dimensions_t、big365_{业务2}_demo_jobs_t
@@ -492,16 +492,19 @@ PARTITION BY RANGE COLUMNS(a,b,c)
 #### 7.4.1 表命名规范
 
 ```text
-命名模式：big365_{业务名称}_{功能}_t
+命名模式：big365_swks_{业务名}_{功能}_t     -- 业务空间表
+         big365_{功能}_t                    -- 系统表（无 swks 即系统级）
 
 示例：
-  big365_log_monitor_dimensions_t     -- 日志监控业务的维度表
-  big365_log_monitor_cube_t           -- 日志监控业务的立方体表
-  big365_log_monitor_demo_jobs_t      -- 日志监控业务的演示数据任务表
+  big365_swks_log_monitor_dimensions_t     -- 日志监控业务的维度表
+  big365_swks_log_monitor_cube_t           -- 日志监控业务的立方体表
+  big365_swks_log_monitor_demo_jobs_t      -- 日志监控业务的演示数据任务表
 
-  big365_iot_device_dimensions_t      -- 物联网业务的维度表
-  big365_iot_device_cube_t            -- 物联网业务的立方体表
-  big365_iot_device_demo_jobs_t       -- 物联网业务的演示数据任务表
+  big365_swks_iot_device_dimensions_t      -- 物联网业务的维度表
+  big365_swks_iot_device_cube_t            -- 物联网业务的立方体表
+
+  big365_biz_registry_t                    -- 系统表：已注册业务清单
+  big365_config_t                          -- 系统表：全局配置
 ```
 
 #### 7.4.2 核心约束：必须支持按业务动态生成表
@@ -521,7 +524,7 @@ PARTITION BY RANGE COLUMNS(a,b,c)
 以日志分析业务（`log_monitor`）为例：
 
 ```sql
-CREATE TABLE IF NOT EXISTS big365_log_monitor_dimensions_t (
+CREATE TABLE IF NOT EXISTS big365_swks_log_monitor_dimensions_t (
   id           INT PRIMARY KEY AUTO_INCREMENT,
   column_name  VARCHAR(64) NOT NULL,         -- 坐标列名，如 'a', 'b', 'c'
   display_name VARCHAR(128) NOT NULL,         -- 业务含义，如 'app', 'endpoint', 'statusCode'
@@ -538,7 +541,7 @@ CREATE TABLE IF NOT EXISTS big365_log_monitor_dimensions_t (
 示例数据：
 
 ```sql
-INSERT INTO big365_log_monitor_dimensions_t (column_name, display_name, leaf_min, leaf_max) VALUES
+INSERT INTO big365_swks_log_monitor_dimensions_t (column_name, display_name, leaf_min, leaf_max) VALUES
   ('a', 'app',          1, 10),
   ('b', 'endpoint',     1, 100),
   ('c', 'status_code',  1, 50),
@@ -550,7 +553,7 @@ INSERT INTO big365_log_monitor_dimensions_t (column_name, display_name, leaf_min
 
 ```sql
 -- 由 big365-api 根据维度定义动态生成 CREATE TABLE 语句
-CREATE TABLE IF NOT EXISTS big365_log_monitor_cube_t (
+CREATE TABLE IF NOT EXISTS big365_swks_log_monitor_cube_t (
   pid        INT UNSIGNED NOT NULL,
   a          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..10=叶子（leaf_max 来自 dimensions 表）
   b          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..100=叶子
@@ -570,7 +573,7 @@ CREATE TABLE IF NOT EXISTS big365_log_monitor_cube_t (
 写入逻辑：
 
 ```sql
-UPDATE big365_log_monitor_cube_t SET `20260101` = `20260101` + 100
+UPDATE big365_swks_log_monitor_cube_t SET `20260101` = `20260101` + 100
 WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 -- 2^5 = 32 行同时更新
 ```
@@ -578,14 +581,14 @@ WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 查询逻辑：
 
 ```sql
-SELECT `20260101` FROM big365_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
+SELECT `20260101` FROM big365_swks_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
 -- Grand Total，一行返回
 ```
 
 #### 7.4.5 演示数据生成任务表
 
 ```sql
-CREATE TABLE IF NOT EXISTS big365_log_monitor_demo_jobs_t (
+CREATE TABLE IF NOT EXISTS big365_swks_log_monitor_demo_jobs_t (
   job_id VARCHAR(64) PRIMARY KEY,
   scale VARCHAR(32) NOT NULL,
   parameters_json JSON,
@@ -602,9 +605,9 @@ CREATE TABLE IF NOT EXISTS big365_log_monitor_demo_jobs_t (
 ```text
 1. 用户提交业务定义：业务名称 + 维度列表（每维 column_name/display_name/leaf_min/leaf_max）
 2. big365-api 生成三张表的 CREATE TABLE 语句并执行：
-     big365_{业务名}_dimensions_t
-     big365_{业务名}_cube_t
-     big365_{业务名}_demo_jobs_t
+     big365_swks_{业务名}_dimensions_t
+     big365_swks_{业务名}_cube_t
+     big365_swks_{业务名}_demo_jobs_t
 3. 往 dimensions_t 写入维度元数据。
 4. 业务即可开始写入和查询数据。
 ```
@@ -613,7 +616,7 @@ CREATE TABLE IF NOT EXISTS big365_log_monitor_demo_jobs_t (
 
 MVP 直接继承原始设计的全套核心机制，仅做以下调整：
 
-| | 原始 `bigdata_365` | MVP `big365_{业务名}_cube_t` | 说明 |
+| | 原始 `bigdata_365` | MVP `big365_swks_{业务名}_cube_t` | 说明 |
 |---|---|---|---|
 | 0=ALL 哨兵 | ✓ 沿用 | ✓ 沿用 | 核心不变 |
 | 级联更新 | ✓ 沿用 | ✓ 沿用 | 写入即计算 |
@@ -624,8 +627,8 @@ MVP 直接继承原始设计的全套核心机制，仅做以下调整：
 | 维度数 | 3 | 5 | 日志分析业务需要 5 个维度 |
 | 总行数 | 1.11 亿 | ~374 万 | 首版数据量小得多 |
 | 日期列数 | 428 | 按需扩展 | 首版只需少量日期列，后续 ALTER TABLE 加列 |
-| 表名 | `bigdata_365` | `big365_{业务名}_cube_t` | 体现立方体语义 + 业务归属 |
-| 维度表 | 共享 `big365_dimension` | `big365_{业务名}_dimensions_t` | 每业务独立 |
+| 表名 | `bigdata_365` | `big365_swks_{业务名}_cube_t` | 体现立方体语义 + 业务归属 |
+| 维度表 | 共享 `big365_dimension` | `big365_swks_{业务名}_dimensions_t` | 每业务独立 |
 
 ---
 
@@ -703,11 +706,11 @@ EXPLAIN SELECT * FROM bigdata_365 WHERE b = 10 AND c = 10000;
 ### 9.3 MVP 当前方向
 
 ```text
-big365_{业务名}_cube_t（物化立方体表）
+big365_swks_{业务名}_cube_t（物化立方体表）
   ├── N 维坐标列 × 日期宽列
   ├── 0=ALL 哨兵，级联更新 2^N 行/事件
   ├── 查询 = 坐标定位 + 读指标，零聚合
-  └── 表由 big365-api 按业务动态创建，命名规范 big365_{业务名}_{功能}_t
+  └── 表由 big365-api 按业务动态创建，命名规范 big365_swks_{业务名}_{功能}_t
 ```
 
 MVP 不是原始设计的「简化版」，而是**原始设计在首版业务规模下的直接实现**。计算前置、零聚合查询、坐标空间模型、动态建表——这些才是 big365 存在的意义。
