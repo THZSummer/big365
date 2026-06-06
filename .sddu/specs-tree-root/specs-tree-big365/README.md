@@ -14,7 +14,7 @@
 
 `plan-api.md` 是 REST API 设计文档，包含接口清单、核心接口示例（业务注册/写入/查询）、数据流、统一响应格式、错误码表和内部包结构。
 
-`plan-page.md` 是 React 演示前端页面设计文档，包含页面结构、路由、组件树、API Client 约定和 Nginx 代理配置。
+`plan-page.md` 是 React 演示前端页面设计文档，包含页面结构、路由、组件树、API Client 约定和 Vite 代理配置。
 
 ADR 文件记录已接受的关键架构决策：历史工程归档与 API/Web 两工程组织、MySQL 普通表结构化列 + JSON 扩展模型、异步演示数据生成 Job、`big365-web` React 前端独立构建并由 Compose 托管交付。
 
@@ -46,7 +46,7 @@ specs-tree-big365/
 | [plan.md](plan.md) | 技术计划（主计划）：big365 - 结论为先归档历史工程，再创建 `big365-api` 与 `big365-web` 两个顶层独立工程。引用 plan-api / plan-db / plan-page 子文档。 | planned |
 | [plan-api.md](plan-api.md) | API 设计：接口清单、核心接口示例、数据流、统一响应格式、错误码、内部包结构。 | planned |
 | [plan-db.md](plan-db.md) | 数据库设计分析（四部分）：核心设计思想→存与查→落地到 MVP，含系统表 DDL 和业务表模板。 | planned |
-| [plan-page.md](plan-page.md) | 前端页面设计：React + Vite 页面结构、路由、组件树、API Client 约定、Nginx 配置。 | planned |
+| [plan-page.md](plan-page.md) | 前端页面设计：React + Vite 页面结构、路由、组件树、API Client 约定、Vite 代理配置。 | planned |
 | [ADR-001-big365-star-independent-project.md](ADR-001-big365-star-independent-project.md) | ADR-001：归档历史工程并保留 API/Web 两个顶层独立工程。 | ACCEPTED |
 | [ADR-002-mysql-ordinary-table-model.md](ADR-002-mysql-ordinary-table-model.md) | ADR-002：MySQL 普通表采用结构化列 + JSON 扩展模型。 | ACCEPTED |
 | [ADR-003-async-demo-data-generation.md](ADR-003-async-demo-data-generation.md) | ADR-003：演示数据生成采用异步 Job 模型。 | ACCEPTED |
@@ -66,7 +66,7 @@ big365 面向中小业务和开源评估用户，提供一个低复杂度、低�
 | API 服务 | `big365-api`，Java 21 + Spring Boot 3.5.14 REST API + MyBatis + MySQL 普通表 |
 | 后端内部包 | `common`、`dimension`、`record`、`query`、`demo`、`model`、`storage`、`config` |
 | 数据生成 | 作为 `big365-api` 内部 `demo` 包能力，采用异步 Job 模型；暂不拆顶层工程 |
-| 前端工程 | `big365-web`，React + Vite + TypeScript，Nginx 容器托管 |
+| 前端工程 | `big365-web`，React + Vite + TypeScript，Node.js 直接运行 |
 | 部署体验 | 根级 `compose.yml` + 可选 `compose.podman.yml`；不拆独立 Compose 工程 |
 | 文档与教程 | `docs/`，快速开始、概念模型、API 文档和日志分析教程；不拆独立工程 |
 | 验证 | `tests/e2e/`，端到端验证脚本；不拆独立工程 |

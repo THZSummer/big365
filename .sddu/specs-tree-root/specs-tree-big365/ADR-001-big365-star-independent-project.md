@@ -18,7 +18,7 @@ big365 规范要求提供面向中小业务用户的开源多维数据服务闭�
 决定先将历史工程资产迁移到 `backup/legacy-20260606/`，再在仓库根目录只新建两个顶层独立工程：
 
 - `big365-api`：Spring Boot 后端 API 服务，包含 REST API、领域模型、MySQL 普通表存储、组合查询、演示数据生成 Job、OpenAPI、后端测试。
-- `big365-web`：React 演示前端，包含页面、组件、API client、前端测试、前端 Dockerfile 与 Nginx 配置。
+- `big365-web`：React 演示前端，包含页面、组件、API client、前端测试、Dockerfile。
 
 历史归档范围：
 

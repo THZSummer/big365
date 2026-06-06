@@ -86,7 +86,6 @@ big365/
 │   └── src/test/python/         # 集成测试（调用实际 API）
 ├── big365-web/                # React 演示前端独立工程
 │   ├── Dockerfile             # 前端镜像构建文件
-│   ├── nginx.conf             # 前端静态资源与 /api 代理配置
 │   ├── README.md              # 前端开发、测试、部署说明
 │   ├── scripts/                 # 一键启动/停止脚本
 │   ├── src/                   # 页面、组件、API client
@@ -344,7 +343,7 @@ pending -> initializing -> generating -> writing -> summarizing -> completed
 
 ### 5.7 前端交付
 
-详见 [`plan-page.md`](plan-page.md)。React + Vite + TypeScript，独立工程 `big365-web/`，Nginx 容器托管。
+详见 [`plan-page.md`](plan-page.md)。React + Vite + TypeScript，独立工程 `big365-web/`，Node.js 运行（Vite dev server），不引入 Nginx。
 
 对应 ADR：[`ADR-004-frontend-delivery.md`](ADR-004-frontend-delivery.md)。
 
@@ -366,7 +365,7 @@ big365-api/src/main/resources/db/
 |---|---|---:|---|
 | `mysql` | `mysql:8.0` | `3306` | `mysqladmin ping` |
 | `backend` | 本地 Dockerfile | `8080` | `GET /api/health` |
-| `frontend` | 本地 Dockerfile / nginx | `3000` | HTTP 访问首页 |
+| `frontend` | 本地 Dockerfile（node） | `3000` | HTTP 访问首页 |
 
 ---
 
@@ -472,7 +471,6 @@ big365-api/src/main/resources/db/
 ├── vite.config.ts
 ├── index.html
 ├── Dockerfile
-├── nginx.conf
 ├── scripts/
 │   ├── start.sh                # 本地启动（npm run dev）
 │   └── stop.sh                 # 停止服务
@@ -713,7 +711,7 @@ def pytest_runtest_makereport(item, call):
 | OQ-003 MySQL 普通表设计 | 采用预计算物化数据空间模型：坐标列 + 日期宽列 + 级联更新，暂不引入分区表 |
 | OQ-004 查询是否聚合 | MVP 先返回明细记录与指标字段，不做复杂聚合；首页可基于返回结果做简单展示 |
 | OQ-005 百万级生成方式 | 异步任务执行，支持进度与失败原因，允许配置降级 |
-| OQ-006 前端交付 | 独立 React 前端，Compose 中由 Nginx 托管静态文件 |
+| OQ-006 前端交付 | 独立 React 前端，Node.js 直接运行（Vite），不引入 Nginx |
 | OQ-007 Compose 文件 | 主 compose 文件复用；必要时提供 Podman override |
 | OQ-008 OpenAPI/Swagger | 纳入 MVP 必做 |
 | OQ-009 删除策略 | Dimension 禁用；Space Cell 软删除 |
@@ -728,7 +726,7 @@ def pytest_runtest_makereport(item, call):
 | `ADR-001-big365-star-independent-project.md` | 归档历史工程并新建 `big365-api` / `big365-web` 两个顶层独立工程 |
 | `ADR-002-mysql-ordinary-table-model.md` | MySQL 普通表采用预计算物化数据空间模型 |
 | `ADR-003-async-demo-data-generation.md` | 演示数据生成采用异步 Job 模型 |
-| `ADR-004-frontend-delivery.md` | React 前端独立构建并由 Nginx/Compose 交付 |
+| `ADR-004-frontend-delivery.md` | React 前端 Node.js 直接运行（Vite），不引入 Nginx |
 
 ---
 

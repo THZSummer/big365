@@ -7,7 +7,7 @@
 
 ## 1. 技术栈
 
-React + Vite + TypeScript，独立工程 `big365-web/`。构建产物由 Nginx 容器托管，Compose 中作为 `frontend` 服务运行。
+React + Vite + TypeScript，独立工程 `big365-web/`。开发与部署均使用 Node.js（Vite dev server / preview），不引入 Nginx。
 
 对应 ADR：[ADR-004-frontend-delivery.md](ADR-004-frontend-delivery.md)。
 
@@ -64,7 +64,7 @@ big365-web/
 ├── vite.config.ts
 ├── tsconfig.json
 ├── Dockerfile
-├── nginx.conf
+├── vite.config.ts                  # 含 proxy 配置（/api → backend:8080）
 ├── README.md
 ├── src/
 │   ├── main.tsx
@@ -115,20 +115,34 @@ client.interceptors.response.use(
 export default client;
 ```
 
-## 6. Nginx 代理配置
+## 6. Vite 代理配置
 
-```nginx
-server {
-    listen 80;
-    root /usr/share/nginx/html;
-    index index.html;
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-    location /api/ {
-        proxy_pass http://backend:8080;
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': 'http://localhost:8080'
     }
+  }
+});
+```
 
-    location / {
-        try_files $uri /index.html;
-    }
-}
+Compose 中 `frontend` 服务的 `Dockerfile` 使用 `node` 镜像运行 `npm run dev`，`proxy` 指向 `backend:8080`。
+
+## 7. Dockerfile
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 ```
