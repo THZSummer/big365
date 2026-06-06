@@ -79,6 +79,7 @@ big365/
 ├── big365-api/                # Spring Boot 后端 API 独立工程
 │   ├── Dockerfile             # 后端镜像构建文件
 │   ├── README.md              # 后端开发、测试、部署说明
+│   ├── scripts/                 # 一键启动/停止脚本
 │   ├── src/main/java/...      # dimension、space、demo、model 等内部包
 │   ├── src/main/resources/db/ # 数据库初始化 / migration 脚本
 │   ├── src/test/java/          # 单元测试（JUnit 5）
@@ -87,6 +88,7 @@ big365/
 │   ├── Dockerfile             # 前端镜像构建文件
 │   ├── nginx.conf             # 前端静态资源与 /api 代理配置
 │   ├── README.md              # 前端开发、测试、部署说明
+│   ├── scripts/                 # 一键启动/停止脚本
 │   ├── src/                   # 页面、组件、API client
 │   └── tests/                 # 前端测试
 ├── docs/                      # 快速开始、概念模型、API、教程；非独立工程
@@ -390,6 +392,9 @@ big365-api/src/main/resources/db/
 [NEW] big365-api/                                   # ===== 后端工程 =====
 ├── pom.xml
 ├── Dockerfile
+├── scripts/
+│   ├── start.sh                # 本地启动（mvn spring-boot:run）
+│   └── stop.sh                 # 停止服务
 ├── src/main/java/org/big365/api/
 │   ├── Big365ApiApplication.java
 │   ├── config/
@@ -468,6 +473,9 @@ big365-api/src/main/resources/db/
 ├── index.html
 ├── Dockerfile
 ├── nginx.conf
+├── scripts/
+│   ├── start.sh                # 本地启动（npm run dev）
+│   └── stop.sh                 # 停止服务
 ├── src/
 │   ├── main.tsx
 │   ├── App.tsx
