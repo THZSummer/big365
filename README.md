@@ -196,6 +196,8 @@ open http://localhost:8081/big365/druid/   # 登录 admin / 123456
 
 ## 🧪 测试
 
+### Java 单元测试
+
 ```bash
 # 运行全部测试
 mvn test
@@ -207,6 +209,39 @@ mvn test -pl big365-web
 当前测试覆盖：
 - `big365-core`：基础单元测试（JUnit 4）
 - `big365-web`：Spring 上下文加载测试（JUnit 5 + Spring Boot Test）
+
+### Python 集成测试
+
+对运行中的服务进行 HTTP API 集成测试，每个接口一个独立文件，可单独或批量执行。
+
+```bash
+cd big365-web/src/test/python
+
+# 安装依赖（首次运行前执行一次）
+python3 -m pip install -r requirements.txt --break-system-packages
+
+# 独立测试某个接口
+python3 test_hello.py              # 欢迎页
+python3 test_bigdata_crud.py       # CRUD 操作
+python3 test_dimension.py          # 维度初始化
+
+# 全量运行
+python3 all.py
+```
+
+> 💡 如环境中缺少 pip，先执行：`curl -sS https://bootstrap.pypa.io/get-pip.py | python3 - --break-system-packages`
+>
+> `--break-system-packages` 用于绕过 PEP 668 保护（Python 3.14+ 的 Debian/Ubuntu 系统需要），其他系统可省略此参数。
+
+**测试文件说明：**
+
+| 文件 | 用例数 | 覆盖接口 |
+|------|--------|---------|
+| `test_hello.py` | 2 | `GET /` 欢迎页 |
+| `test_bigdata_crud.py` | 6 | `GET/POST/PUT/DELETE /api/v1/bigdata365/*` |
+| `test_dimension.py` | 2 | `POST/DELETE /api/v1/bigdata365/init/dimension/r` |
+
+> ⚠️ 部分接口存在已知 Bug（如 POST/PUT/DELETE 实际调用 findOne），测试用例已标注 `[已知Bug]`，反映当前实际行为而非期望行为。
 
 ---
 

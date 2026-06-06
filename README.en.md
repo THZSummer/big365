@@ -196,6 +196,8 @@ open http://localhost:8081/big365/druid/   # Login: admin / 123456
 
 ## 🧪 Testing
 
+### Java Unit Tests
+
 ```bash
 # Run all tests
 mvn test
@@ -207,6 +209,39 @@ mvn test -pl big365-web
 Current test coverage:
 - `big365-core`: Basic unit tests (JUnit 4)
 - `big365-web`: Spring context loading test (JUnit 5 + Spring Boot Test)
+
+### Python Integration Tests
+
+HTTP API integration tests against a running service. Each API endpoint has its own test file, runnable independently or in batch.
+
+```bash
+cd big365-web/src/test/python
+
+# Install dependencies (run once before first test)
+python3 -m pip install -r requirements.txt --break-system-packages
+
+# Test individual endpoints
+python3 test_hello.py              # Welcome page
+python3 test_bigdata_crud.py       # CRUD operations
+python3 test_dimension.py          # Dimension init
+
+# Run all tests
+python3 all.py
+```
+
+> 💡 If pip is not available, install it first: `curl -sS https://bootstrap.pypa.io/get-pip.py | python3 - --break-system-packages`
+>
+> The `--break-system-packages` flag bypasses PEP 668 protection (required on Debian/Ubuntu with Python 3.14+). Omit it on other systems if not needed.
+
+**Test files:**
+
+| File | Cases | Endpoints |
+|------|-------|-----------|
+| `test_hello.py` | 2 | `GET /` welcome page |
+| `test_bigdata_crud.py` | 6 | `GET/POST/PUT/DELETE /api/v1/bigdata365/*` |
+| `test_dimension.py` | 2 | `POST/DELETE /api/v1/bigdata365/init/dimension/r` |
+
+> ⚠️ Some endpoints have known bugs (e.g., POST/PUT/DELETE actually call findOne). Test cases are marked `[known bug]` reflecting current behavior, not expected behavior.
 
 ---
 
