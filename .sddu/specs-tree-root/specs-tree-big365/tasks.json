@@ -106,7 +106,7 @@
         {"action": "NEW", "path": ".env.example"},
         {"action": "NEW", "path": "README.md"}
       ],
-      "verify_command": "docker compose -f compose.yml config --quiet && echo OK"
+      "verify_command": "podman-compose -f compose.yml config 2>&1 | grep -q 'name:' && echo OK"
     },
     {
       "id": "TASK-006",

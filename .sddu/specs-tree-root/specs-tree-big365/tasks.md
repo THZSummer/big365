@@ -198,9 +198,9 @@ curl -s http://localhost:8080/api/nonexistent | python3 -c "import sys,json; d=j
 **执行波次**: 2
 
 #### 描述
-创建仓库级部署编排文件和项目入口。包含根级 `compose.yml`（MySQL + backend + frontend 三服务拓扑）、`.env.example`（环境变量模板）和新的根 `README.md`（指向快速开始、Compose 启动、API 文档）。
+创建仓库级部署编排文件和项目入口。包含根级 `compose.yml`（MySQL + backend + frontend 三服务拓扑）、`.env.example`（环境变量模板）和新的根 `README.md`（指向快速开始、Compose 启动、API 文档）。**当前环境仅验证 podman-compose，docker-compose 暂不验证。**
 
-覆盖需求：FR-001 (docker-compose)、FR-002 (podman-compose)、FR-043 (快速开始入口)
+覆盖需求：FR-001 (docker-compose, 当前环境仅验证 podman)、FR-002 (podman-compose)、FR-043 (快速开始入口)
 
 #### 涉及文件
 - [NEW] `compose.yml`
@@ -218,8 +218,8 @@ curl -s http://localhost:8080/api/nonexistent | python3 -c "import sys,json; d=j
 
 #### 验证命令
 ```bash
-# 验证 compose 文件语法
-docker compose -f compose.yml config --quiet && echo "OK: compose config valid"
+# 验证 compose 文件语法（当前环境仅用 podman）
+podman-compose -f compose.yml config 2>&1 | grep -q "name:" && echo "OK: compose config valid"
 
 # 验证 .env.example 关键变量存在
 grep -q "MYSQL_ROOT_PASSWORD" .env.example && grep -q "MYSQL_DATABASE" .env.example && echo "OK: env vars"
@@ -593,7 +593,7 @@ grep -c 'curl' docs/log-analysis-tutorial.md > /dev/null && echo "OK: tutorial h
 **执行波次**: 6
 
 #### 描述
-完善两工程的 Dockerfile、调优 compose 编排、编写 Playwright 前端页面测试、编写端到端验证脚本。确保从零启动到全部功能验证的完整自动化闭环。
+完善两工程的 Dockerfile、调优 compose 编排、编写 Playwright 前端页面测试、编写端到端验证脚本。确保从零启动到全部功能验证的完整自动化闭环。**当前环境仅验证 podman-compose，docker-compose 暂不验证。**
 
 覆盖需求：FR-003（Compose 自动初始化）、FR-048~FR-051（测试验收）、NFR-001（10 分钟启动）、NFR-002（30 分钟体验）
 
@@ -613,7 +613,7 @@ grep -c 'curl' docs/log-analysis-tutorial.md > /dev/null && echo "OK: tutorial h
 #### 验收标准
 - [ ] `big365-api/Dockerfile` 多阶段构建：maven 编译 → eclipse-temurin:21-jre 运行
 - [ ] `big365-web/Dockerfile` 多阶段构建：npm build → node:20-alpine 运行（npm run dev）
-- [ ] Compose 启动后，`docker compose ps` 显示三个服务均为 healthy
+- [ ] Compose 启动后，`podman-compose ps` 显示三个服务均为 healthy（当前环境仅验证 podman）
 - [ ] `test_home.py`（Playwright）：首页加载、关键元素可见、健康检查状态显示
 - [ ] `test_biz_register.py`（Playwright）：填写注册表单 → 提交 → 验证成功提示 → 列表出现新业务
 - [ ] `test_dimensions.py`（Playwright）：维度列表加载、创建/编辑/禁用操作
@@ -624,8 +624,8 @@ grep -c 'curl' docs/log-analysis-tutorial.md > /dev/null && echo "OK: tutorial h
 
 #### 验证命令
 ```bash
-# 验证 Compose 可正常解析
-docker compose -f compose.yml config --quiet && echo "OK"
+# 验证 Compose 可正常解析（当前环境仅用 podman）
+podman-compose -f compose.yml config 2>&1 | grep -q "name:" && echo "OK: compose config valid"
 
 # 运行后端 Python 集成测试
 cd big365-api/src/test/python && pytest -v --html=reports/report.html --self-contained-html
