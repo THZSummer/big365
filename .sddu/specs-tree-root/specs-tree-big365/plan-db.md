@@ -238,13 +238,12 @@ a = 0                     -- 哨兵值，代表「所有 a」
 
 ```text
 当前 MVP 首版只接入一个业务（日志分析），所以：
-  - 新建坐标数据表：big365_records（MVP 行式模型，不是宽表）
-  - 新建维度元数据表：big365_dimensions（只为这一个业务）
+  - 新建坐标数据表：big365_log_monitor_cube_t（物化立方体）
+  - 新建维度元数据表：big365_log_monitor_dimensions_t（独立维度表）
 
 后续接入第二个业务时：
-  - 新建 big365_{业务2}_records
-  - 新建 big365_{业务2}_dimensions
-  两张表都与第一个业务完全隔离。
+  - big365-api 自动创建 big365_{业务2}_cube_t、big365_{业务2}_dimensions_t、big365_{业务2}_demo_jobs_t
+  三张表都与第一个业务完全隔离。
 ```
 
 ---
@@ -490,12 +489,39 @@ PARTITION BY RANGE COLUMNS(a,b,c)
 
 ### 7.4 MVP 数据库设计建议
 
-MVP 首版接入一个业务（日志分析），创建以下表：
+#### 7.4.1 表命名规范
 
-#### `big365_dimensions`（维度元数据表）
+```text
+命名模式：big365_{业务名称}_{功能}_t
+
+示例：
+  big365_log_monitor_dimensions_t     -- 日志监控业务的维度表
+  big365_log_monitor_cube_t           -- 日志监控业务的立方体表
+  big365_log_monitor_demo_jobs_t      -- 日志监控业务的演示数据任务表
+
+  big365_iot_device_dimensions_t      -- 物联网业务的维度表
+  big365_iot_device_cube_t            -- 物联网业务的立方体表
+  big365_iot_device_demo_jobs_t       -- 物联网业务的演示数据任务表
+```
+
+#### 7.4.2 核心约束：必须支持按业务动态生成表
+
+**新接入一个业务 = 系统自动创建该业务的全套表**，不能依赖手动 DDL。
+
+```text
+约束：
+  1. big365-api 必须具备「按业务创建表」的能力。
+  2. 创建表的参数：业务名称 + 维度定义（列名/取值范围）+ 日期列范围。
+  3. 表结构根据维度数、各维取值范围、日期范围动态生成。
+  4. 维度表、立方体表、任务表三张一起创建。
+```
+
+#### 7.4.3 维度元数据表
+
+以日志分析业务（`log_monitor`）为例：
 
 ```sql
-CREATE TABLE big365_dimensions (
+CREATE TABLE IF NOT EXISTS big365_log_monitor_dimensions_t (
   id           INT PRIMARY KEY AUTO_INCREMENT,
   column_name  VARCHAR(64) NOT NULL,         -- 坐标列名，如 'a', 'b', 'c'
   display_name VARCHAR(128) NOT NULL,         -- 业务含义，如 'app', 'endpoint', 'statusCode'
@@ -509,44 +535,42 @@ CREATE TABLE big365_dimensions (
 );
 ```
 
-示例数据（日志分析业务）：
+示例数据：
 
 ```sql
-INSERT INTO big365_dimensions (column_name, display_name, leaf_min, leaf_max) VALUES
+INSERT INTO big365_log_monitor_dimensions_t (column_name, display_name, leaf_min, leaf_max) VALUES
   ('a', 'app',          1, 10),
   ('b', 'endpoint',     1, 100),
-  ('c', 'status_code',  1, 50),    -- 常用状态码枚举
-  ('d', 'env',          1, 5),     -- dev/test/staging/prod/dr
+  ('c', 'status_code',  1, 50),
+  ('d', 'env',          1, 5),
   ('e', 'region',       1, 10);
 ```
 
-#### `big365_cube`（物化立方体数据表）
+#### 7.4.4 物化立方体数据表
 
 ```sql
-CREATE TABLE big365_cube (
+-- 由 big365-api 根据维度定义动态生成 CREATE TABLE 语句
+CREATE TABLE IF NOT EXISTS big365_log_monitor_cube_t (
   pid        INT UNSIGNED NOT NULL,
-  a          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..10=叶子
+  a          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..10=叶子（leaf_max 来自 dimensions 表）
   b          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..100=叶子
   c          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..50=叶子
   d          TINYINT UNSIGNED NOT NULL,     -- 0=ALL, 1..5=叶子
   e          TINYINT UNSIGNED NOT NULL,     -- 0=ALL, 1..10=叶子
   `20260101` INT UNSIGNED NOT NULL DEFAULT 0,
   `20260102` INT UNSIGNED NOT NULL DEFAULT 0,
-  -- ... 日期列按需扩展
+  -- 日期列按需扩展
   PRIMARY KEY (a, b, c, d, e),
   INDEX idx_pid (pid)
 );
 ```
 
-总行数：`(10+1) × (100+1) × (50+1) × (5+1) × (10+1) = 11 × 101 × 51 × 6 × 11 ≈ 374 万行`
+总行数：`11 × 101 × 51 × 6 × 11 ≈ 374 万行`。
 
 写入逻辑：
 
 ```sql
--- 场景：app=3, endpoint=7, status_code=500, env=prod, region=cn-east 收到 100 次请求
--- 日期：20260101
-
-UPDATE big365_cube SET `20260101` = `20260101` + 100
+UPDATE big365_log_monitor_cube_t SET `20260101` = `20260101` + 100
 WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 -- 2^5 = 32 行同时更新
 ```
@@ -554,21 +578,14 @@ WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 查询逻辑：
 
 ```sql
--- 查 Grand Total
-SELECT `20260101` FROM big365_cube WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
-
--- 查 app=3 的总量
-SELECT `20260101` FROM big365_cube WHERE a=3 AND b=0 AND c=0 AND d=0 AND e=0;
-
--- 查 app=3, endpoint=7, status_code=500 的量
-SELECT `20260101` FROM big365_cube WHERE a=3 AND b=7 AND c=500 AND d=0 AND e=0;
--- 每个查询都是 1 行读取，零聚合
+SELECT `20260101` FROM big365_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
+-- Grand Total，一行返回
 ```
 
-#### `big365_demo_jobs`（演示数据生成任务表）
+#### 7.4.5 演示数据生成任务表
 
 ```sql
-CREATE TABLE big365_demo_jobs (
+CREATE TABLE IF NOT EXISTS big365_log_monitor_demo_jobs_t (
   job_id VARCHAR(64) PRIMARY KEY,
   scale VARCHAR(32) NOT NULL,
   parameters_json JSON,
@@ -580,11 +597,23 @@ CREATE TABLE big365_demo_jobs (
 );
 ```
 
+#### 7.4.6 新业务接入流程
+
+```text
+1. 用户提交业务定义：业务名称 + 维度列表（每维 column_name/display_name/leaf_min/leaf_max）
+2. big365-api 生成三张表的 CREATE TABLE 语句并执行：
+     big365_{业务名}_dimensions_t
+     big365_{业务名}_cube_t
+     big365_{业务名}_demo_jobs_t
+3. 往 dimensions_t 写入维度元数据。
+4. 业务即可开始写入和查询数据。
+```
+
 ### 7.5 新旧模型对照
 
 MVP 直接继承原始设计的全套核心机制，仅做以下调整：
 
-| | 原始 `bigdata_365` | MVP `big365_cube` | 说明 |
+| | 原始 `bigdata_365` | MVP `big365_{业务名}_cube_t` | 说明 |
 |---|---|---|---|
 | 0=ALL 哨兵 | ✓ 沿用 | ✓ 沿用 | 核心不变 |
 | 级联更新 | ✓ 沿用 | ✓ 沿用 | 写入即计算 |
@@ -595,8 +624,8 @@ MVP 直接继承原始设计的全套核心机制，仅做以下调整：
 | 维度数 | 3 | 5 | 日志分析业务需要 5 个维度 |
 | 总行数 | 1.11 亿 | ~374 万 | 首版数据量小得多 |
 | 日期列数 | 428 | 按需扩展 | 首版只需少量日期列，后续 ALTER TABLE 加列 |
-| 表名 | `bigdata_365` | `big365_cube` | 体现「立方体」语义 |
-| 维度表 | 共享（历史遗留问题） | 每业务独立 | 数据隔离 |
+| 表名 | `bigdata_365` | `big365_{业务名}_cube_t` | 体现立方体语义 + 业务归属 |
+| 维度表 | 共享 `big365_dimension` | `big365_{业务名}_dimensions_t` | 每业务独立 |
 
 ---
 
@@ -669,16 +698,16 @@ EXPLAIN SELECT * FROM bigdata_365 WHERE b = 10 AND c = 10000;
 
 1. **理解 big365 的「多维」基因**：big365 不是普通 CRUD 平台，而是天然围绕维度、坐标、聚合来思考数据的。
 2. **知道 MVP 的设计边界**：MVP 的目标是低复杂度、快速试用，不直接复制预计算立方体。
-3. **保留演进路径**：当 MVP 后续出现高频聚合查询需求时，可基于 `big365_records` 的原始数据异步构建聚合立方体，复用 `0=ALL` 思想。
+3. **保留演进路径**：当 MVP 进入后续版本并需要更多高级特性时，可在现有物化立方体模型上扩展分区表、自动日期列扩展、异步预计算等优化。
 
 ### 9.3 MVP 当前方向
 
 ```text
-big365_cube（物化立方体表）
-  ├── 5 维坐标列 (a,b,c,d,e) × 日期宽列
-  ├── 0=ALL 哨兵，级联更新 2^5=32 行/事件
+big365_{业务名}_cube_t（物化立方体表）
+  ├── N 维坐标列 × 日期宽列
+  ├── 0=ALL 哨兵，级联更新 2^N 行/事件
   ├── 查询 = 坐标定位 + 读指标，零聚合
-  └── 仅分区表暂不引入，其他核心思想完整保留
+  └── 表由 big365-api 按业务动态创建，命名规范 big365_{业务名}_{功能}_t
 ```
 
-MVP 不是原始设计的「简化版」或「替代版」，而是**原始设计在更小规模、更少维度、无分区优化下的直接实现**。计算前置、零聚合查询、坐标空间模型——这些才是 big365 存在的意义。
+MVP 不是原始设计的「简化版」，而是**原始设计在首版业务规模下的直接实现**。计算前置、零聚合查询、坐标空间模型、动态建表——这些才是 big365 存在的意义。
