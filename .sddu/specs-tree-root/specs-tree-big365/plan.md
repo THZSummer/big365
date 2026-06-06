@@ -271,7 +271,9 @@ org.big365.api.config      # Spring / OpenAPI / Async / Web 配置
 
 ### 5.3 数据模型与表结构
 
-采用「结构化主表 + JSON 扩展字段」的折中普通表设计：常用日志维度作为普通列以便查询与索引，完整 `dimensions` / `metrics` 使用 JSON 保留通用性。
+数据库设计的深度分析单独沉淀在 [`plan-db.md`](plan-db.md)。该文档基于原始 MySQL 实例信息、历史 MyBatis Mapper、Navicat 模型文件和历史 Vector/Coordinate 代码，分析了 `bigdata_365`、`bigdata_id`、`big365_dimension`、`vector` 等表的存储查询思路，并解释为什么当前新工程不直接沿用历史宽表/分区表设计。
+
+当前实现采用「结构化主表 + JSON 扩展字段」的折中普通表设计：常用日志维度作为普通列以便查询与索引，完整 `dimensions` / `metrics` 使用 JSON 保留通用性。
 
 #### `big365_dimensions`
 
