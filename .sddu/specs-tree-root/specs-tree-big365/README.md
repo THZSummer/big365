@@ -10,7 +10,7 @@
 
 `plan.md` 是 big365 的技术计划，状态为 `planned`。最新计划结论是：先将历史工程资产迁移到 `backup/legacy-20260606/`，再新建两个顶层独立工程 `big365-api` 与 `big365-web`；文档、端到端测试和 Compose 作为仓库级资产管理。
 
-`plan-db.md` 是数据库设计分析文档，基于原始 MySQL 实例信息、历史 Mapper、Navicat 模型文件和历史 Vector/Coordinate 代码，分析 `bigdata_365`、`bigdata_id`、`big365_dimension`、`vector` 等表的存储查询核心思路。
+`plan-db.md` 是数据库设计分析文档，基于原始 MySQL 实例信息、21 行真实 INSERT 样本数据、历史 Mapper、Navicat 模型文件和历史 Vector/Coordinate 代码，深度分析 `bigdata_365` 作为**预计算物化多维立方体**的核心思想：坐标 `0=ALL` 哨兵机制实现维度上卷、写入时级联更新 `2^d` 行、查询零聚合计算的 OLAP Cube 设计。
 
 ADR 文件记录已接受的关键架构决策：历史工程归档与 API/Web 两工程组织、MySQL 普通表结构化列 + JSON 扩展模型、异步演示数据生成 Job、`big365-web` React 前端独立构建并由 Compose 托管交付。
 
@@ -38,7 +38,7 @@ specs-tree-big365/
 | [spec.md](spec.md) | 规范文档：big365 - 标识符 `FR-BIG365-MVP`，状态 `specified`，优先级 `P0`；定义上下文、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵。 | specified |
 | [spec.json](spec.json) | big365 结构化规范数据 - 供后续计划、任务和验证阶段使用。 | specified |
 | [plan.md](plan.md) | 技术计划：big365 - 状态 `planned`；结论为先归档历史工程，再创建 `big365-api` 与 `big365-web` 两个顶层独立工程，并引用 `plan-db.md` 作为数据库设计依据。 | planned |
-| [plan-db.md](plan-db.md) | 数据库设计分析：基于原始库信息和历史资产分析 `bigdata_365` 宽表、坐标主键、日期列、分区、维度元数据和新旧模型映射。 | planned |
+| [plan-db.md](plan-db.md) | 数据库设计分析：深度剖析 `bigdata_365` 作为预计算物化立方体的 0=ALL 哨兵机制、级联写入（2^d 更新）和零计算查询范式。 | planned |
 | [ADR-001-big365-star-independent-project.md](ADR-001-big365-star-independent-project.md) | ADR-001：归档历史工程并保留 API/Web 两个顶层独立工程。 | ACCEPTED |
 | [ADR-002-mysql-ordinary-table-model.md](ADR-002-mysql-ordinary-table-model.md) | ADR-002：MySQL 普通表采用结构化列 + JSON 扩展模型。 | ACCEPTED |
 | [ADR-003-async-demo-data-generation.md](ADR-003-async-demo-data-generation.md) | ADR-003：演示数据生成采用异步 Job 模型。 | ACCEPTED |
@@ -62,7 +62,7 @@ big365 面向中小业务和开源评估用户，提供一个低复杂度、低�
 | 部署体验 | 根级 `compose.yml` + 可选 `compose.podman.yml`；不拆独立 Compose 工程 |
 | 文档与教程 | `docs/`，快速开始、概念模型、API 文档和日志分析教程；不拆独立工程 |
 | 验证 | `tests/e2e/`，端到端验证脚本；不拆独立工程 |
-| 数据库分析 | `plan-db.md` 单独分析原始 `bigdata_365` 宽表、坐标列、日期列和分区设计 |
+| 数据库分析 | `plan-db.md` 深度分析 `bigdata_365` 预计算物化立方体：0=ALL 哨兵、级联写入、零计算查询 |
 | 数据模型 | MySQL 普通表采用结构化列 + JSON 扩展模型 |
 
 ### ADR 清单
