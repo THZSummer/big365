@@ -8,7 +8,7 @@ spring:
       # ?serverTimezone=UTC???????
       jdbc-url: jdbc:mysql://127.0.0.1:3306/bigdata365?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
       driverClass: com.mysql.cj.jdbc.Driver
-      passwordCallbackClassName: com.com.mlj.share.bigdata365.config.DruidCustomPasswordCallback
+      passwordCallbackClassName: com.mlj.share.big365.example.config.DruidCustomPasswordCallback
       # Spring Boot ???????????????????
       # druid ???????
       initial-size: 5

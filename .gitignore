@@ -19,9 +19,28 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# virtual machine crash logs
 hs_err_pid*
 
-.idea/*
+# IDE
+.idea/
+*.iml
+.vscode/
 
-target/*
+# Build output (all modules)
+target/
+**/target/
+
+# Node.js
+node_modules/
+**/node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Runtime PID files
+*.pid
+
+# Maven Wrapper jar (binary)
+big365-web/.mvn/wrapper/maven-wrapper.jar

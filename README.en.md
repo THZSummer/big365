@@ -84,20 +84,33 @@ The `bigdata_365` table uses **RANGE COLUMNS(a, b, c)** partitioning strategy, w
 
 ### Prerequisites
 
-- **JDK** 20+
-- **Maven** 3.8+ (or use the bundled Maven Wrapper)
+- **JDK** 20+ (tested compatible with JDK 21)
+- **Maven** 3.8+ (recommended: use the bundled Maven Wrapper `./mvnw`)
 - **MySQL** 8.0+ (8.0.33 or higher recommended)
-- **Kafka** (optional, for messaging support)
+- **Podman** or **Docker** (optional, for quick MySQL setup)
+- **Kafka** (optional, messaging support)
 
-### Database Setup
+### Quick MySQL Setup (Podman/Docker)
+
+Start a MySQL 8.0 database with one command:
+
+```bash
+# Podman
+podman run -d   --name big365-mysql   -e MYSQL_ROOT_PASSWORD=root123   -e MYSQL_DATABASE=bigdata365   -e MYSQL_USER=bigdata365   -e MYSQL_PASSWORD=bigdata365   -p 3306:3306   mysql:8.0
+
+# or Docker
+docker run -d --name big365-mysql   -e MYSQL_ROOT_PASSWORD=root123   -e MYSQL_DATABASE=bigdata365   -e MYSQL_USER=bigdata365   -e MYSQL_PASSWORD=bigdata365   -p 3306:3306 mysql:8.0
+```
+
+### Manual Database Setup
+
+To initialize the database manually:
 
 ```sql
--- Create database
 CREATE DATABASE `bigdata365` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-
--- Create tables (see doc/bigdata365.ndm2 for Navicat data model)
--- Or use the project's init API to auto-create tables
 ```
+
+> See `doc/bigdata365.ndm2` (Navicat data modeler file) for the full table schema, or use the project's init API to auto-create tables.
 
 ### Build
 
@@ -106,14 +119,16 @@ CREATE DATABASE `bigdata365` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_
 git clone https://gitee.com/your-org/big365.git
 cd big365
 
-# Build all modules
-mvn clean package -DskipTests
-
-# Or use Maven Wrapper
+# ✅ Recommended: use the bundled Maven Wrapper (no Maven installation needed)
 cd big365-web
 ./mvnw clean package -DskipTests
 cd ..
+
+# Alternative: use system Maven
+mvn clean package -DskipTests
 ```
+
+> ⚠️ **JDK 21 Compatibility**: If using JDK 21, ensure Lombok version ≥ 1.18.32 (the project has been updated accordingly).
 
 ### Configuration
 
@@ -127,25 +142,41 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/bigdata365?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: bigdata365
-    password: bigdata365
-  # ... see application.yml for more config
+    druid:
+      username: bigdata365
+      password: bigdata365
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/bigdata365?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
+      # Password callback class (for Base64 decoding)
+      passwordCallbackClassName: com.mlj.share.big365.example.config.DruidCustomPasswordCallback
 ```
 
-> ⚠️ The default DB password is Base64-encoded with a custom `DruidPasswordCallback` for decoding.
+> 🔐 The database password is **Base64-encoded** in the config property `spring.datasource.druid.connect-properties.password` with value `YmlnZGF0YTM2NQ==` (decodes to `bigdata365`). The custom `DruidCustomPasswordCallback` decodes it automatically at runtime.
 
 ### Run
 
 ```bash
-# Option 1: Run JAR directly
-java -jar big365-web/target/big365-web-0.0.1-SNAPSHOT.jar
+# ✅ Recommended: use Maven Wrapper for development
+cd big365-web
+./mvnw spring-boot:run
 
-# Option 2: Maven
-mvn spring-boot:run -pl big365-web
+# Option 2: run the compiled JAR (production deployment)
+java -jar big365-web/target/big365-web-0.0.1-SNAPSHOT.jar
 ```
 
-Access: `http://localhost:8081/big365/`
+Once started, visit: **http://localhost:8081/big365/**
+
+Expected response: `Hello Bigdata365!`
+
+### Verify
+
+```bash
+# Test the application
+curl http://localhost:8081/big365/
+# Output: Hello Bigdata365!
+
+# Access the Druid monitoring console
+open http://localhost:8081/big365/druid/   # Login: admin / 123456
+```
 
 ---
 

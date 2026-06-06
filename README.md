@@ -84,20 +84,33 @@ Vector = [Coordinate(dimension=维度名, value=值), ...]
 
 ### 环境要求
 
-- **JDK** 20+
-- **Maven** 3.8+（或使用项目自带的 Maven Wrapper）
+- **JDK** 20+（实测兼容 JDK 21）
+- **Maven** 3.8+（推荐使用项目自带的 Maven Wrapper `./mvnw`）
 - **MySQL** 8.0+（建议 8.0.33 及以上）
+- **Podman** 或 **Docker**（可选，用于快速启动 MySQL）
 - **Kafka**（可选，消息队列支持）
 
-### 数据库初始化
+### 快速启动（Podman/Docker）
+
+使用 Podman 或 Docker 一键启动 MySQL 数据库：
+
+```bash
+# Podman
+podman run -d   --name big365-mysql   -e MYSQL_ROOT_PASSWORD=root123   -e MYSQL_DATABASE=bigdata365   -e MYSQL_USER=bigdata365   -e MYSQL_PASSWORD=bigdata365   -p 3306:3306   mysql:8.0
+
+# 或 Docker
+docker run -d --name big365-mysql   -e MYSQL_ROOT_PASSWORD=root123   -e MYSQL_DATABASE=bigdata365   -e MYSQL_USER=bigdata365   -e MYSQL_PASSWORD=bigdata365   -p 3306:3306 mysql:8.0
+```
+
+### 数据库手动初始化
+
+如需手动初始化数据库：
 
 ```sql
--- 创建数据库
 CREATE DATABASE `bigdata365` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-
--- 创建表结构（详见 doc/bigdata365.ndm2 Navicat 数据模型文件）
--- 或通过项目初始化接口自动建表
 ```
+
+> 表结构详见 `doc/bigdata365.ndm2`（Navicat 数据模型文件），或通过项目初始化 API 自动建表。
 
 ### 编译构建
 
@@ -106,14 +119,16 @@ CREATE DATABASE `bigdata365` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_
 git clone https://gitee.com/your-org/big365.git
 cd big365
 
-# 使用 Maven 构建全部模块
-mvn clean package -DskipTests
-
-# 或使用 Maven Wrapper
+# ✅ 推荐：使用项目自带的 Maven Wrapper（无需安装 Maven）
 cd big365-web
 ./mvnw clean package -DskipTests
 cd ..
+
+# 备选：使用系统 Maven
+mvn clean package -DskipTests
 ```
+
+> ⚠️ **JDK 21 兼容性**：如使用 JDK 21，需确保 Lombok 版本 ≥ 1.18.32（项目已适配）。
 
 ### 配置
 
@@ -127,25 +142,41 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/bigdata365?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: bigdata365
-    password: bigdata365
-  # ... 更多配置见 application.yml
+    druid:
+      username: bigdata365
+      password: bigdata365
+      jdbc-url: jdbc:mysql://127.0.0.1:3306/bigdata365?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
+      # 密码回调类（用于 Base64 解码）
+      passwordCallbackClassName: com.mlj.share.big365.example.config.DruidCustomPasswordCallback
 ```
 
-> ⚠️ 默认数据库密码采用 Base64 编码存储，由自定义 `DruidPasswordCallback` 解码。
+> 🔐 数据库密码采用 **Base64 编码** 存储于配置项 `spring.datasource.druid.connect-properties.password` 中，值为 `YmlnZGF0YTM2NQ==`（解码后为 `bigdata365`），由自定义 `DruidCustomPasswordCallback` 在运行时自动解码。
 
 ### 运行
 
 ```bash
-# 方式一：直接运行 JAR
-java -jar big365-web/target/big365-web-0.0.1-SNAPSHOT.jar
+# ✅ 推荐：使用 Maven Wrapper 启动（开发调试）
+cd big365-web
+./mvnw spring-boot:run
 
-# 方式二：Maven 启动
-mvn spring-boot:run -pl big365-web
+# 方式二：直接运行编译好的 JAR（生产部署）
+java -jar big365-web/target/big365-web-0.0.1-SNAPSHOT.jar
 ```
 
-启动后访问：`http://localhost:8081/big365/`
+启动后访问：**http://localhost:8081/big365/**
+
+预期响应：`Hello Bigdata365!`
+
+### 验证
+
+```bash
+# 测试应用是否正常
+curl http://localhost:8081/big365/
+# 输出：Hello Bigdata365!
+
+# 查看 Druid 监控控制台
+open http://localhost:8081/big365/druid/   # 登录 admin / 123456
+```
 
 ---
 
