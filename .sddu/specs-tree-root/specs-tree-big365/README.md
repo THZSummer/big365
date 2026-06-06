@@ -2,120 +2,76 @@
 
 ## 目录简介
 
-本目录保存 big365 的 SDDU 工作流产物。当前已有 `discovery.md`、`spec.md` 和 `spec.json`。
+本目录保存 big365 的 SDDU 工作流产物，当前包括需求挖掘、规范、结构化规范数据、技术计划和架构决策记录。
 
-`discovery.md` 记录了需求挖掘结果：big365 要成为面向中小业务的开源多维数据服务，帮助潜在用户以低复杂度、低接入成本完成多维数据建模、CRUD、组合查询和演示验证。MVP 主线包括 docker-compose / podman-compose 一键体验、Spring Boot REST API、Vector/Coordinate/Dimension 核心模型、MySQL 普通表存储、React 简单前端、日志分析示例、可配置数据生成、自解释文档和自动化测试。
+`discovery.md` 记录需求挖掘结果：big365 要成为面向中小业务的开源多维数据服务，帮助潜在用户以低复杂度、低接入成本完成多维数据建模、CRUD、组合查询和演示验证。
 
-`spec.md` 是 big365 的完整规范文档，标识符为 `FR-BIG365-MVP`，状态为 `specified`，优先级为 `P0`，创建日期为 `2026-06-06`。规范将 discovery 结论转化为可测试需求，覆盖上下文、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵。`spec.json` 是与规范对应的结构化数据文件，便于后续计划、任务分解和验证阶段复用。
+`spec.md` 是 big365 的完整规范文档，标识符为 `FR-BIG365-MVP`，状态为 `specified`，优先级为 `P0`，创建日期为 `2026-06-06`。`spec.json` 是与规范对应的结构化数据文件，便于后续计划、任务分解和验证阶段复用。
+
+`plan.md` 是 big365 的技术计划，状态为 `planned`。最新计划结论是：先将历史工程资产迁移到 `backup/legacy-20260606/`，再新建两个顶层独立工程 `big365-api` 与 `big365-web`；文档、端到端测试和 Compose 作为仓库级资产管理。
+
+ADR 文件记录已接受的关键架构决策：历史工程归档与 API/Web 两工程组织、MySQL 普通表结构化列 + JSON 扩展模型、异步演示数据生成 Job、`big365-web` React 前端独立构建并由 Compose 托管交付。
 
 ## 目录结构
 
 ```text
 specs-tree-big365/
-├── README.md        # 本文件 - big365 目录导航
-├── discovery.md     # 需求挖掘报告：big365
-├── spec.md          # big365 规范文档
-└── spec.json        # big365 结构化规范数据
+├── README.md                                      # 本文件 - big365 目录导航
+├── discovery.md                                   # 需求挖掘报告：big365
+├── spec.md                                        # big365 规范文档
+├── spec.json                                      # big365 结构化规范数据
+├── plan.md                                        # big365 技术计划
+├── ADR-001-big365-star-independent-project.md     # ADR-001：历史归档与 API/Web 两工程组织
+├── ADR-002-mysql-ordinary-table-model.md          # ADR-002：MySQL 普通表模型
+├── ADR-003-async-demo-data-generation.md          # ADR-003：异步演示数据生成
+└── ADR-004-frontend-delivery.md                   # ADR-004：big365-web 前端交付
 ```
 
 ## 文件说明
 
 | 文件 | 说明 | 状态 |
 |------|------|------|
-| [discovery.md](discovery.md) | 需求挖掘报告：big365 - 定义开源多维数据服务 MVP 的问题、用户、需求、方案、指标、范围、风险、下一步和拆分建议，并包含 Mermaid 图表；5.3 验收路径明确先展示默认演示效果，再进入演示数据生成向导，并展示初始化、生成、写入、统计等阶段。 | 已完成 |
-| [spec.md](spec.md) | 规范文档：big365 - 标识符 `FR-BIG365-MVP`，状态 `specified`，优先级 `P0`；定义 big365 MVP 的上下文、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵。 | specified |
-| [spec.json](spec.json) | big365 结构化规范数据 - 记录规范元数据、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵，供后续计划、任务和验证阶段使用。 | specified |
-| README.md | big365 目录导航 | 已更新 |
+| [discovery.md](discovery.md) | 需求挖掘报告：big365 - 定义开源多维数据服务 MVP 的问题、用户、需求、方案、指标、范围、风险、下一步和拆分建议。 | 已完成 |
+| [spec.md](spec.md) | 规范文档：big365 - 标识符 `FR-BIG365-MVP`，状态 `specified`，优先级 `P0`；定义上下文、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵。 | specified |
+| [spec.json](spec.json) | big365 结构化规范数据 - 供后续计划、任务和验证阶段使用。 | specified |
+| [plan.md](plan.md) | 技术计划：big365 - 状态 `planned`；结论为先归档历史工程，再创建 `big365-api` 与 `big365-web` 两个顶层独立工程。 | planned |
+| [ADR-001-big365-star-independent-project.md](ADR-001-big365-star-independent-project.md) | ADR-001：归档历史工程并保留 API/Web 两个顶层独立工程。 | ACCEPTED |
+| [ADR-002-mysql-ordinary-table-model.md](ADR-002-mysql-ordinary-table-model.md) | ADR-002：MySQL 普通表采用结构化列 + JSON 扩展模型。 | ACCEPTED |
+| [ADR-003-async-demo-data-generation.md](ADR-003-async-demo-data-generation.md) | ADR-003：演示数据生成采用异步 Job 模型。 | ACCEPTED |
+| [ADR-004-frontend-delivery.md](ADR-004-frontend-delivery.md) | ADR-004：`big365-web` 作为 React 前端并由 Compose 托管交付。 | ACCEPTED |
 
 ## 内容摘要
 
 ### 核心定位
 
-big365 面向中小业务和开源评估用户，提供一个低复杂度、低接入成本的多维数据服务。它不追求在 MVP 阶段替代完整 OLAP、BI 或大数据平台，而是优先完成从启动、建模、数据写入、CRUD、组合查询到前端演示和文档试跑的端到端闭环。
-
-### 规范元数据
-
-| 字段 | 内容 |
-|------|------|
-| 名称 | big365 |
-| 标识符 | FR-BIG365-MVP |
-| 状态 | specified |
-| 优先级 | P0 |
-| 作者 | usb |
-| 创建日期 | 2026-06-06 |
-| 输入来源 | `.sddu/specs-tree-root/specs-tree-big365/discovery.md` |
-| 规范文档 | `spec.md` |
-| 结构化数据 | `spec.json` |
-| 拆分决策 | 暂不拆分，按单一聚合目录创建完整 MVP 规范 |
+big365 面向中小业务和开源评估用户，提供一个低复杂度、低接入成本的多维数据服务，优先完成从启动、建模、数据写入、CRUD、组合查询到前端演示和文档试跑的端到端闭环。
 
 ### 关键决策
 
 | 维度 | 结论 |
 |------|------|
-| 项目目标 | 开源项目 |
-| 首要对象 | 潜在用户 |
-| 核心痛点 | 现有方案整体复杂、成本高 |
-| 目标场景 | 中小业务 |
-| 核心价值 | 快速接入 |
-| 首个接入方式 | REST API |
-| MVP API 能力 | 完整 CRUD |
-| 关键查询能力 | 多维条件 + 时间/周期范围组合查询 |
-| 核心模型 | Vector / Coordinate / Dimension |
-| MVP 存储 | MySQL 普通表 |
-| 部署体验 | 同时提供 docker-compose 与 podman-compose |
-| 前端形态 | React 简单 API 演示前端 |
-| 示例场景 | 日志分析 |
-| 文档要求 | 快速开始 + 概念模型 + API 文档 + 完整教程 |
+| 工程组织 | 历史工程迁移到 `backup/legacy-20260606/`；新主线只保留 `big365-api` 与 `big365-web` 两个顶层独立工程 |
+| API 服务 | `big365-api`，Java 21 + Spring Boot 3.5.14 REST API + MyBatis + MySQL 普通表 |
+| 后端内部包 | `common`、`dimension`、`record`、`query`、`demo`、`model`、`storage`、`config` |
+| 数据生成 | 作为 `big365-api` 内部 `demo` 包能力，采用异步 Job 模型；暂不拆顶层工程 |
+| 前端工程 | `big365-web`，React + Vite + TypeScript，Nginx 容器托管 |
+| 部署体验 | 根级 `compose.yml` + 可选 `compose.podman.yml`；不拆独立 Compose 工程 |
+| 文档与教程 | `docs/`，快速开始、概念模型、API 文档和日志分析教程；不拆独立工程 |
+| 验证 | `tests/e2e/`，端到端验证脚本；不拆独立工程 |
+| 数据模型 | MySQL 普通表采用结构化列 + JSON 扩展模型 |
 
-### Spec 章节
+### ADR 清单
 
-| 章节 | 说明 |
-|------|------|
-| 1. 元数据 | 记录名称、标识符、阶段、优先级、作者、目标版本和规范目录。 |
-| 2. 上下文与问题定义 | 说明项目背景、核心问题、用户价值和不做的成本。 |
-| 3. 目标与非目标 | 定义 MVP 必须达成的目标和明确不纳入 MVP 的范围。 |
-| 4. 用户故事 | 覆盖开源试用者、业务开发者、开源评估者、项目维护者和后端开发者的核心诉求。 |
-| 5. 功能需求 | 定义启动与部署、核心模型、维度元数据 CRUD、业务数据 CRUD、组合查询、演示数据生成、React 前端、API 与响应规范、文档与教程、测试与验收等需求。 |
-| 6. 非功能需求 | 覆盖性能、可用性、兼容性、可维护性、可测试性、文档一致性和安全边界。 |
-| 7. 验收标准 | 给出端到端启动体验、默认演示、数据生成、CRUD、组合查询、文档教程和测试验证等验收场景。 |
-| 8. 数据与接口边界 | 约定 API、存储、数据生成、前端和文档边界。 |
-| 9. 范围边界 | 明确 MVP、后续版本和不做事项。 |
-| 10. 可测试性与追踪矩阵 | 将目标、用户故事和功能需求映射到验收场景。 |
-| 11. 开放问题 | 记录实现阶段需进一步决策的问题。 |
-| 12. 规范确认 | 记录规范状态和下一步进入技术规划阶段。 |
-
-### Discovery 章节
-
-| 章节 | 说明 |
-|------|------|
-| 0. Discovery 结论总览 | 一句话定位、关键决策和 MVP 用户体验闭环 Mermaid 图。 |
-| 1. 问题定义 | 核心问题、业务价值和不做的成本。 |
-| 2. 用户画像 | 主要用户、典型场景、目标用户旅程 Mermaid 图和关键痛点。 |
-| 3. 需求清单 | Must/Should/Could 需求，以及 MoSCoW 优先级 Mermaid 图。 |
-| 4. 推荐方案 | MVP 方案概述、选择理由、差异化优势和逻辑架构 Mermaid 图。 |
-| 5. 成功指标 | 北极星指标、目标数值和验收路径 Mermaid 序列图；验收路径包含依赖、后端、前端启动，先展示默认演示效果，再通过向导配置业务化参数并一键生成演示数据。 |
-| 6. 范围边界 | MVP、V1、未来版本、不做事项和版本演进 Mermaid 图；前端范围强调业务化表达、默认演示效果、生成向导和阶段进度展示。 |
-| 7. 风险与假设 | 关键假设、主要风险和验证计划 Mermaid 图。 |
-| 8. 下一步建议 | 进入规范编写阶段前需明确的模型、API、表结构、前端、数据和测试边界。 |
-| 9. 拆分建议 | 当前不强制拆分，并给出后续拆分机会 Mermaid 思维导图。 |
-
-### 必备方向
-
-- docker-compose / podman-compose 一键启动 big365 后端服务和 MySQL。
-- REST API 作为第一接入方式，支持维度元数据和业务数据完整 CRUD。
-- 支持多维条件过滤与时间/周期范围组合查询。
-- 将 Vector/Coordinate/Dimension 作为核心模型，并在代码、API 语义和文档中保持一致解释。
-- MVP 首个存储实现采用 MySQL 普通表，并为后续可插拔存储预留边界。
-- 提供 React 简单前端：打开后先展示默认演示效果 / 示例查询结果，再通过业务化演示数据生成向导配置数据量、时间范围、应用数量、接口数量、错误率等参数，并展示初始化、生成、写入、统计等阶段状态。
-- 提供日志分析示例、可配置数据生成、自解释文档和自动化测试。
-
-### 范围边界
-
-MVP 不做权限、多租户、审计、多数据库适配、复杂性能优化、完整数据平台能力和 Kafka 主路径写入。MySQL 分区表、宽表动态列、更多存储后端、SDK、批量导入、生产级安全等内容可进入后续版本规划。前端范围限定为 React 简单演示前端，不做复杂管理后台；需要先展示默认演示效果，再通过业务化向导引导用户生成演示数据，并展示生成阶段状态。
+| ADR | 决策 | 状态 |
+|-----|------|------|
+| [ADR-001](ADR-001-big365-star-independent-project.md) | 归档历史工程并保留 API/Web 两个顶层独立工程。 | ACCEPTED |
+| [ADR-002](ADR-002-mysql-ordinary-table-model.md) | MySQL 普通表采用结构化列 + JSON 扩展模型。 | ACCEPTED |
+| [ADR-003](ADR-003-async-demo-data-generation.md) | 演示数据生成采用异步 Job 模型。 | ACCEPTED |
+| [ADR-004](ADR-004-frontend-delivery.md) | `big365-web` 作为 React 前端并由 Compose 托管交付。 | ACCEPTED |
 
 ### 下一步
 
-建议进入技术规划阶段，并进一步细化后端模块、REST API、MySQL 表结构与索引、React 演示前端、演示数据生成、Compose 交付、文档教程和自动化测试的实现方案。
+建议进入任务分解阶段，按历史资产归档、`big365-api`、`big365-web`、`docs/`、`tests/e2e/`、根级 Compose 和 README 更新等边界拆分可并行执行的原子任务。
 
 ## 子目录
 
