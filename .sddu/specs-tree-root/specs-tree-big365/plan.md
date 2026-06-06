@@ -153,7 +153,7 @@ flowchart TD
 
 | 项目 | 内容 |
 |---|---|
-| 描述 | 先将历史 `pom.xml`、`big365-core`、`big365-web`、`doc`、历史 README 迁移到 `backup/legacy-20260606/`，再在根目录新建 `big365-api` 与 `big365-web` 两个顶层独立工程；`docs/`、`tests/e2e/`、`compose.yml` 作为仓库级资产；演示数据生成作为 `big365-api` 内部业务包。 |
+| 描述 | 先将历史 `pom.xml`、`big365-core`、`big365-web`、`doc`、历史 README 迁移到 `backup/legacy-20260606/`，再在根目录新建 `big365-api` 与 `big365-web` 两个顶层独立工程；`docs/`、`compose.yml` 作为仓库级资产；演示数据生成作为 `big365-api` 内部业务包。后端 Python 集成测试，前端 Playwright 页面测试。 |
 | 优点 | 完全符合 Spec 红线；释放 `big365-web` 给 React 前端；顶层工程数量少，认知成本低；每个独立工程都可独立构建、测试、部署；非业务资产不被误拆为工程。 |
 | 缺点 | 后端初期承载 dimension、space、demo 等多个业务包，需要内部边界设计清晰；若后续复杂度显著上升，可能需要再拆。 |
 | 风险评估 | 低到中等。当前两工程足以支撑端到端闭环，后续 3 个月内再拆顶层业务模块概率较低。 |
@@ -211,9 +211,8 @@ flowchart TD
 ```text
 backup/legacy-20260606       # 历史工程资产归档
 big365-api                   # Spring Boot API 服务，包含后端业务能力
-big365-web                   # React 演示前端
+big365-web                   # React 演示前端（Playwright 测试在工程内）
 docs                         # 文档资产，不作为独立工程
-tests/e2e                    # 端到端验证资产，不作为独立工程
 compose.yml                  # 根级 Compose 编排
 compose.podman.yml           # Podman Compose 覆盖配置，可选
 .env.example                 # 启动环境变量示例
@@ -490,8 +489,13 @@ big365-api/src/main/resources/db/
 │   │   └── Loading.tsx
 │   └── styles/
 │       └── global.css
-└── tests/
-    └── App.test.tsx
+└── tests/                                           # Playwright 前端测试
+    ├── conftest.py
+    ├── test_home.py
+    ├── test_biz_register.py
+    ├── test_dimensions.py
+    ├── test_space.py
+    └── test_demo_data.py
 
 [NEW] compose.yml                                  # ===== 部署 =====
 [NEW] compose.podman.yml
@@ -503,16 +507,6 @@ big365-api/src/main/resources/db/
 ├── api.md
 ├── log-analysis-tutorial.md
 └── troubleshooting.md
-
-[NEW] tests/e2e/                                   # ===== E2E 测试 =====
-├── requirements.txt
-├── run_e2e.py
-├── test_health.py
-├── test_biz_register.py
-├── test_dimension_crud.py
-├── test_space_crud.py
-├── test_demo_data.py
-└── test_frontend.py
 
 [NEW] .sddu/specs-tree-root/specs-tree-big365/     # ===== 规划文档 =====
 ├── plan.md
@@ -572,47 +566,115 @@ big365-api/src/main/resources/db/
 |---|---|---|---|
 | 1 | 历史资产归档与工程骨架 | `backup/legacy-20260606/`、`big365-api`、`big365-web`、根级 `compose.yml` 可启动空壳 | 无 |
 | 2 | 数据库与后端基础 | DDL、健康检查、统一响应、异常处理、OpenAPI | 阶段 1 |
-| 3 | 维度 CRUD | 维度模型、Mapper、Service、API、测试 | 阶段 2 |
-| 4 | 数据空间写入与查询 | space 表、级联 UPDATE、坐标查询、API、测试 | 阶段 3 |
-| 5 | 组合查询 | Query DTO、动态 SQL、分页/限制、测试 | 阶段 4 |
-| 6 | 演示数据生成 | Job 表、异步执行、批量写入、进度查询 | 阶段 4 |
-| 7 | React 前端 | 首页、数据生成、维度/数据 CRUD、组合查询 | 阶段 3-6 |
-| 8 | Compose 闭环 | MySQL/Backend/Frontend 编排、健康检查 | 阶段 2-7 |
-| 9 | 文档与 E2E | 快速开始、概念、API、教程、验证脚本 | 全阶段同步，最终收敛 |
+| 3 | 后端 API + Python 测试 | 维度/space/demo 接口实现，Python 集成测试脚本 | 阶段 2 |
+| 4 | React 前端 + Playwright 测试 | 页面实现，Playwright 页面测试脚本 | 阶段 3 |
+| 5 | Compose 闭环 + 一键验证 | compose.yml，`pytest` 一键跑通全部测试 | 阶段 3-4 |
 
 ---
 
 ## 9. 测试与验证计划
 
-### 9.1 后端测试
+### 9.1 后端 API 测试（Python 调接口）
 
-| 范围 | 测试 |
-|---|---|
-| 领域模型 | Dimension / Coordinate / Vector / SpaceCell 映射测试 |
-| 服务逻辑 | 维度唯一性、禁用策略、记录校验、查询参数校验 |
-| API | MockMvc 或 SpringBootTest 覆盖 CRUD、查询、数据生成 |
-| 异常 | 校验错误、重复编码、不存在资源、数据库不可用模拟 |
+**核心要求：必须使用 Python 脚本对实际启动的后端接口进行 HTTP 调用验证**，不使用 MockMvc 等模拟方式。
 
-### 9.2 前端验证
+测试文件位置：`big365-api/src/test/python/`
 
-| 范围 | 验证 |
-|---|---|
-| 构建 | `npm run build` |
-| 基础测试 | 首页渲染、API 错误提示、页面路由 |
-| 手工验收 | Compose 启动后访问默认演示、执行数据生成和查询 |
+| 测试脚本 | 覆盖接口 | 验证内容 |
+|---|---|---|
+| `conftest.py` | — | 公共配置：base_url、session、断言工具 |
+| `test_health.py` | `GET /api/health` | 健康检查返回正常 |
+| `test_biz_register.py` | `POST /api/biz/register`、`GET /api/biz/list` | 注册业务、验证建表、重复注册拒绝 |
+| `test_dimension_crud.py` | CRUD `/api/{biz}/dimensions` | 创建/查询/更新/禁用维度、编码唯一性校验 |
+| `test_space_write.py` | `POST /api/{biz}/space/write` | 写入坐标+指标 → 验证返回 affected rows |
+| `test_space_query.py` | `GET /api/{biz}/space/query` | 按坐标读指标、Grand Total 查询、下钻验证 |
+| `test_demo_data.py` | `POST /api/{biz}/demo-data/jobs`、`GET .../{jobId}` | 创建任务 → 轮询状态 → 验证完成摘要 |
 
-### 9.3 E2E 验证
+运行方式：
 
-建议 `tests/e2e/run_e2e.py` 覆盖：
+```bash
+cd big365-api/src/test/python
+pip install -r requirements.txt
+pytest -v
+```
 
-1. 访问 `/api/health`。
-2. 创建维度：`app`、`endpoint`、`statusCode`、`env`、`region`。
-3. 重复创建维度并验证 `DIMENSION_CODE_DUPLICATED`。
-4. 创建业务记录。
-5. 查询业务记录详情与列表。
-6. 执行组合查询：应用 + 接口 + 状态码 + 时间范围。
-7. 创建小样例演示数据任务并轮询完成。
-8. 访问前端首页。
+### 9.2 前端页面测试（Python + Playwright）
+
+**核心要求：必须使用 Playwright 对实际运行的前端页面进行交互验证**。
+
+测试文件位置：`big365-web/tests/`
+
+| 测试脚本 | 覆盖页面 | 验证内容 |
+|---|---|---|
+| `conftest.py` | — | 公共配置：browser、base_url |
+| `test_home.py` | `/` | 首页加载、关键元素可见 |
+| `test_biz_register.py` | `/biz` | 填写业务注册表单 → 提交 → 验证成功提示 |
+| `test_dimensions.py` | `/biz/{biz}/dimensions` | 维度列表加载、创建维度弹窗、禁用操作 |
+| `test_space.py` | `/biz/{biz}/space` | 坐标输入 → 写入 → 查询 → 验证结果展示 |
+| `test_demo_data.py` | `/biz/{biz}/demo-data` | 选择规模 → 创建任务 → 等待进度完成 |
+
+运行方式：
+
+```bash
+cd big365-web/tests
+pip install -r requirements.txt
+playwright install chromium
+pytest -v
+```
+
+**测试报告要求**：
+
+- 使用 `pytest-html` 生成 HTML 测试报告。
+- 失败用例自动截图，保存在 `tests/reports/screenshots/`。
+- 测试日志输出到 `tests/reports/test.log`。
+- 每次运行生成带时间戳的报告目录，不覆盖历史报告。
+
+```bash
+pytest -v \
+  --html=reports/report.html \
+  --self-contained-html \
+  --screenshot=on-failure \
+  --output=reports/screenshots
+```
+
+`conftest.py` 配置示例：
+
+```python
+import pytest
+from pathlib import Path
+from datetime import datetime
+from playwright.sync_api import sync_playwright
+
+REPORT_DIR = Path(__file__).parent / "reports" / datetime.now().strftime("%Y%m%d_%H%M%S")
+
+@pytest.fixture(scope="session")
+def browser():
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        yield browser
+        browser.close()
+
+@pytest.fixture
+def page(browser):
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 720}
+    )
+    page = context.new_page()
+    yield page
+    context.close()
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    if report.when == "call" and report.failed:
+        page = item.funcargs.get("page")
+        if page:
+            screenshot_dir = REPORT_DIR / "screenshots"
+            screenshot_dir.mkdir(exist_ok=True)
+            page.screenshot(path=str(screenshot_dir / f"{item.name}.png"))
+```
 
 ---
 
