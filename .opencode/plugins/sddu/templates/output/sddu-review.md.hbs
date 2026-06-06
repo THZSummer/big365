@@ -1,0 +1,48 @@
+## 输出格式
+
+### 审查报告
+
+```markdown
+## 📋 代码审查报告 - <<feature_name>>
+
+
+### ✅ 通过项
+- 代码质量：<<quality_assessment>>
+- 测试覆盖：<<coverage_percentage>>%
+- 规范符合：<<compliance_percentage>>%
+
+### ⚠️ 需要改进
+1. <<file_path>>:<<line_number>> - <<issue_description>>
+2. <<issue_location>> - <<issue_description>>
+3. <<issue_location>> - <<issue_description>>
+
+### ❌ 阻塞问题
+- <<blocking_issue>>
+
+### 建议
+1. <<suggestion_description>>
+2. <<suggestion_description>>
+3. <<suggestion_description>>
+
+### 结论
+<<conclusion>> **<<conclusion_text>>** - <<next_step>>
+```
+
+**状态更新**: 完成后提示用户运行：
+```bash
+/tool sddu_update_state {"feature": "<<feature_name>>", "status": "reviewed", "data": {"reviewStatus": "<<review_status>>", "issues": {"blocking": <<blocking_count>>, "improvements": <<improvement_count>>}}}
+或
+```
+
+### 自动触发文档更新
+
+完成后自动触发 `@sddu-docs` 扫描并更新 `.sddu/` 目录导航。
+
+**作用**: 
+- 扫描 `.sddu/` 下所有层级目录
+- 读取文件内容生成简介（标题 + 概述）
+- 读取子目录 README 生成目录简介
+- 验证已有 README 与实际内容一致
+- 为缺少或过时的目录生成/更新导航
+
+**无需手动调用**，文档会自动保持最新且与实际一致。

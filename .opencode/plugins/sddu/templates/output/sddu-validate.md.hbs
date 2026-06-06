@@ -1,0 +1,69 @@
+## 输出格式
+
+### 验证报告
+
+```markdown
+## ✅ 验证报告 - <<feature_name>>
+
+
+### 需求覆盖度
+
+| 需求类型 | 总数 | 已覆盖 | 覆盖率 |
+|----------|------|--------|--------|
+| 功能需求 (FR) | <<fr_total>> | <<fr_covered>> | <<fr_percentage>>% |
+| 非功能需求 (NFR) | <<nfr_total>> | <<nfr_covered>> | <<nfr_percentage>>% |
+| 边界情况 (EC) | <<ec_total>> | <<ec_covered>> | <<ec_percentage>>% |
+
+### 一致性检查
+
+- <<status_icon>> 数据模型：<<result>>
+- <<status_icon>> API 接口：<<result>>
+- <<status_icon>> 错误处理：<<result>>
+- <<status_icon>> 边界情况：<<result>>
+
+### 宪法合规
+
+- <<status_icon>> 架构原则：符合 <<adr_reference>>
+- <<status_icon>> 测试覆盖：<<coverage_percentage>>% (>80% 要求)
+- <<status_icon>> 安全标准：符合
+- <<status_icon>> 编码规范：符合
+
+### 孤立代码
+
+- <<isolated_code>>
+
+### 漂移检测
+
+- <<status_icon>> <<requirement_id>> (<<requirement_description>>) 未完全满足：
+  - spec 要求：<<spec_requirement>>
+  - 实际测量：<<actual_measurement>>
+
+### 结论
+
+<<conclusion>> **<<conclusion_text>>** - <<next_step>>
+
+### 改进建议
+
+1. <<suggestion>>
+2. <<suggestion>>
+3. <<suggestion>>
+```
+
+**状态更新**: 完成后提示用户运行：
+```bash
+/tool sddu_update_state {"feature": "<<feature_name>>", "status": "validated"}
+或
+```
+
+### 自动触发文档更新
+
+完成后自动触发 `@sddu-docs` 扫描并更新 `.sddu/` 目录导航。
+
+**作用**: 
+- 扫描 `.sddu/` 下所有层级目录
+- 读取文件内容生成简介（标题 + 概述）
+- 读取子目录 README 生成目录简介
+- 验证已有 README 与实际内容一致
+- 为缺少或过时的目录生成/更新导航
+
+**无需手动调用**，文档会自动保持最新且与实际一致。
