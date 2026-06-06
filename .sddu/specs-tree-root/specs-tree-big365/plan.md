@@ -271,7 +271,7 @@ org.big365.api.config      # Spring / OpenAPI / Async / Web 配置
 
 ### 5.3 数据模型与表结构
 
-数据库设计的深度分析单独沉淀在 [`plan-db.md`](plan-db.md)。该文档基于原始 MySQL 实例信息、历史 MyBatis Mapper、Navicat 模型文件和历史 Vector/Coordinate 代码，分析了 `bigdata_365`、`bigdata_id`、`big365_dimension`、`vector` 等表的存储查询思路，并解释为什么当前新工程不直接沿用历史宽表/分区表设计。
+数据库设计的深度分析单独沉淀在 [`plan-db.md`](plan-db.md)。该文档基于原始 MySQL 实例信息、历史 MyBatis Mapper、Navicat 模型文件和历史 Vector/Coordinate 代码，深度分析了 `bigdata_365` 作为预计算物化立方体的核心思想（0=ALL 哨兵、级联写入 2^d 行、零计算查询），以及每个业务独立坐标表+独立维度表的多业务隔离模式。
 
 当前实现采用「结构化主表 + JSON 扩展字段」的折中普通表设计：常用日志维度作为普通列以便查询与索引，完整 `dimensions` / `metrics` 使用 JSON 保留通用性。
 
@@ -282,11 +282,15 @@ org.big365.api.config      # Spring / OpenAPI / Async / Web 配置
 | `id` | bigint pk auto_increment | 维度 ID |
 | `code` | varchar(64) unique | 维度编码，例如 `app`、`endpoint` |
 | `name` | varchar(128) | 展示名 |
-| `type` | varchar(32) | string / number / time / enum |
+| `type` | varchar(32) | 'dimension' 或 'metric' |
+| `data_type` | varchar(32) | string / number / time / enum |
+| `value_range` | varchar(256) | 维度取值范围，如 `1~10`，不包含 0（0 预留给聚合上卷） |
 | `description` | varchar(512) | 描述 |
 | `enabled` | tinyint | 是否启用 |
 | `created_at` | datetime | 创建时间 |
 | `updated_at` | datetime | 更新时间 |
+
+注意：当前 MVP 首版只服务一个业务（日志分析），维度表为 `big365_dimensions`。后续接入新业务时，应为每个业务创建独立的维度表（如 `big365_{业务名}_dimensions`），实现数据隔离。
 
 #### `big365_records`
 

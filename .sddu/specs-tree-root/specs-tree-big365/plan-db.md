@@ -78,6 +78,105 @@ bigdata365
 
 ---
 
+## 2.2 多业务隔离：每业务独立坐标表 + 独立维度表
+
+### 2.2.1 核心原则
+
+`bigdata_365` 不是所有业务共用的通用表。**它只是某个 3 维业务的一个实例**。
+
+不同业务有不同的维度数、不同的维度取值范围、不同的业务含义，**不能也不可能共用一张坐标表**。
+
+```text
+设计原则：
+  1. 每个业务 = 独立的坐标数据空间表（维度列数 + 日期列数 都不同）
+  2. 每个业务 = 独立的维度元数据表（隔离业务含义）
+  3. 不同业务之间数据完全隔离，互不干扰
+```
+
+### 2.2.2 实例对照
+
+历史仓库中已有多个实例表，每个都是独立的坐标空间：
+
+| 业务实例表 | 维度数 | 坐标列 | 维度范围 | 说明 |
+|---|---|---|---|---|
+| `bigdata_365` | 3 | `(a,b,c)` | a:1~10, b:1~100, c:1~100000 | 主业务（推测是某个大数据聚合场景） |
+| `bigdata_test_r2c_simple_365` | 3 | `(a,b,c)` | a:1~10, b:1~100, c:1~100000 | 简化实例（1 万行） |
+| `bigdata_test_r2c_auto` | 10 | `(a,b,c,d,e,f,g,h,i,j)` | 多个 tinyint 范围 | 高维实验 |
+
+每个表的结构都不同（列数不同、类型不同、行数不同），因为它们代表不同的业务。
+
+### 2.2.3 接入新业务时创建的资产
+
+```text
+新业务接入 = 以下全部新建：
+
+┌─ 坐标数据空间表 ───────────────────┐
+│ CREATE TABLE big365_{业务名} (      │
+│   pid       INT UNSIGNED NOT NULL,  │
+│   {维度1列}  SMALLINT NOT NULL,     │
+│   ...                               │
+│   {日期1}   INT UNSIGNED DEFAULT 0, │
+│   ...                               │
+│   PRIMARY KEY ({维度1列}, ...)      │
+│ );                                   │
+│ 每个业务一张，结构完全独立。           │
+└────────────────────────────────────┘
+
+┌─ 维度元数据表 ──────────────────────┐
+│ CREATE TABLE big365_{业务名}_dim (   │
+│   id          INT AUTO_INCREMENT,    │
+│   column_name VARCHAR(64),  -- 列名  │
+│   display_name VARCHAR(128), -- 展示名 │
+│   value_range VARCHAR(256), -- 取值范围 │
+│   ...                               │
+│ );                                   │
+│ 每个业务一张，隔离业务含义。           │
+└────────────────────────────────────┘
+```
+
+### 2.2.4 为什么维度表也需要独立
+
+```text
+共享维度表的问题：
+  big365_dimension 中混合了：
+    row 1: column='a',  display='应用',    属于 日志监控业务
+    row 2: column='b',  display='接口',    属于 日志监控业务
+    row 3: column='a',  display='设备类型', 属于 物联网业务 ← 冲突！
+
+  不同业务的 'a' 含义不同，不能放在同一张表里。
+
+独立维度表的好处：
+  big365_log_monitor_dim:
+    column_name='app', display_name='应用', value_range='1~10'
+    column_name='endpoint', display_name='接口', value_range='1~100'
+    ...
+
+  big365_iot_device_dim:
+    column_name='dev_type', display_name='设备类型', value_range='1~5'
+    column_name='firmware_ver', display_name='固件版本', value_range='1~20'
+    ...
+
+  各业务独立、业务间零干扰。
+```
+
+### 2.2.5 对 MVP 新工程的设计启示
+
+```text
+当前 MVP 首版只接入一个业务（日志分析），所以：
+  - 新建坐标数据表：big365_records（MVP 行式模型，不是宽表）
+  - 新建维度元数据表：big365_dimensions（只为日志分析这一个业务）
+
+后续接入第二个业务时：
+  - 新建 big365_{业务2}_records
+  - 新建 big365_{业务2}_dimensions
+  - 两张表都与第一个业务完全隔离
+
+MVP 设计应预留这种「按业务建表」的扩展能力，
+而不是假设所有业务共用同一张维度表。
+```
+
+---
+
 ## 3. 核心模型理解：预计算物化立方体
 
 ### 3.1 设计哲学
@@ -411,7 +510,14 @@ p2 < 200000000
 
 ### 6.1 表定位
 
-`big365_dimension` 是历史维度元数据表。
+`big365_dimension` 是历史维度元数据表。**当前是一张共享表，不同业务的维度定义混在一起，这不是最佳实践。**
+
+正确的设计模式（见 2.2 节）是：**每个业务拥有独立的维度表**（如 `big365_log_monitor_dim`、`big365_iot_device_dim`），因为不同业务的维度定义不同，列名含义不同，不应共享。
+
+历史表存在的问题：
+1. 缺少「所属业务」字段，无法区分哪行属于哪个业务。
+2. 缺少「取值范围」描述，无法记录每个维度的合法叶子值区间。
+3. 字段命名不规范（innername/outtername vs inner_name/outer_name）。
 
 模型文件字段：
 
@@ -453,24 +559,30 @@ dimension_pid
 
 ### 6.3 对新设计的启发
 
-新 `big365-api` 不应直接沿用历史字段名，应统一为：
+**核心原则**：每个业务一张独立的维度元数据表。
 
-```text
-id
-code
-name
-type
-description
-enabled
-created_at
-updated_at
+新 `big365-api` 的维度表应命名为 `big365_dimensions`（首版只为一个业务服务，后续新增业务时创建独立的维度表）：
+
+```sql
+CREATE TABLE big365_dimensions (
+  id         BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code       VARCHAR(64) NOT NULL UNIQUE,   -- 维度内部编码
+  name       VARCHAR(128) NOT NULL,          -- 展示名称
+  type       VARCHAR(32) NOT NULL,           -- 'dimension' | 'metric'
+  data_type  VARCHAR(32),                    -- 'string' | 'number' | 'time' | 'enum'
+  value_range VARCHAR(256),                  -- '1~10' | '200,301,404,500'
+  description VARCHAR(512),
+  enabled    TINYINT NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 ```
 
 其中：
 
 - `code` 对应历史 `innername` / 内部名。
 - `name` 对应历史 `outtername` / 展示名。
-- `description` 承载说明。
+- `value_range` 是新增字段，描述该维度的合法叶子值区间（不含 0），比历史更完整。
 - `enabled` 支持禁用而非硬删除。
 
 ---
