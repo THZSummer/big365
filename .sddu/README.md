@@ -20,8 +20,10 @@ big365 定位为面向中小业务的开源多维数据服务，目标是通过 
         ├── discovery.md     # 需求挖掘报告：big365
         ├── spec.md          # big365 规范文档
         ├── spec.json        # big365 结构化规范数据
-        ├── plan.md          # big365 技术计划
-        ├── plan-db.md       # big365 原始数据库设计分析
+        ├── plan.md          # big365 技术计划（主计划）
+        ├── plan-api.md       # big365 REST API 设计
+        ├── plan-db.md        # big365 原始数据库设计分析
+        ├── plan-page.md      # big365 React 演示前端页面设计
         ├── ADR-001-big365-star-independent-project.md
         ├── ADR-002-mysql-ordinary-table-model.md
         ├── ADR-003-async-demo-data-generation.md

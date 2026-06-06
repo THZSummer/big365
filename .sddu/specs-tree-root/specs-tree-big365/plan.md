@@ -124,31 +124,9 @@ flowchart LR
     Generator --> JobTable[(Demo Job 表)]
 ```
 
-### 2.4 数据流变更
+### 2.4 数据流
 
-#### 维度 CRUD 数据流
-
-```text
-HTTP Request -> DimensionController -> DimensionService -> DimensionRepository -> MyBatis Mapper -> big365_swks_{业务名}_dimensions_t
-```
-
-#### 数据空间写入数据流
-
-```text
-HTTP Request -> SpaceController -> SpaceService -> 坐标校验 -> 级联 UPDATE big365_swks_{业务名}_space_t（2^d 行）
-```
-
-#### 数据空间查询数据流
-
-```text
-HTTP Request -> SpaceController -> 坐标解析 -> SELECT 指标列 FROM big365_swks_{业务名}_space_t（1 行读取）
-```
-
-#### 演示数据生成数据流
-
-```text
-POST /api/demo-data/jobs -> 创建 job -> 后台线程执行生成 -> 批量写入 big365_swks_{业务名}_space_t（级联更新） -> 更新 job 状态 -> GET job 查询进度
-```
+详见 [`plan-api.md` §4](plan-api.md)。
 
 ### 2.5 依赖关系图
 
@@ -320,58 +298,18 @@ SELECT `20260101` FROM big365_swks_log_monitor_space_t WHERE a=0 AND b=0 AND c=0
 
 #### `big365_swks_{业务名}_demo_jobs_t`（演示数据任务表，模板）
 
-统一前缀：`/api`
+结构见 [`plan-db.md` §7.4.7](plan-db.md)。
 
-| 资源 | 方法 | 路径 | 说明 | 覆盖需求 |
-|---|---|---|---|---|---|
-| 健康检查 | GET | `/api/health` | 服务与数据库健康状态 | FR-004 |
-| 维度列表 | GET | `/api/dimensions` | 分页/列表查询 | FR-011 |
-| 创建维度 | POST | `/api/dimensions` | 创建维度 | FR-009, FR-014 |
-| 维度详情 | GET | `/api/dimensions/{id}` | 查询维度 | FR-010 |
-| 更新维度 | PUT | `/api/dimensions/{id}` | 更新名称、描述、启用状态 | FR-012 |
-| 禁用维度 | DELETE | `/api/dimensions/{id}` | MVP 采用禁用策略 | FR-013 |
-| 写入数据 | POST | `/api/space/write` | 写入坐标+日期+指标值，触发级联更新 | FR-015, FR-020 |
-| 查询指标 | GET | `/api/space/query?a=3&b=7&c=500&d=0&e=0&date=20260101` | 按坐标读指标，零聚合 | FR-016, FR-021~FR-026 |
-| 创建生成任务 | POST | `/api/demo-data/jobs` | 异步生成演示数据 | FR-027~FR-031 |
-| 查询任务状态 | GET | `/api/demo-data/jobs/{jobId}` | 查询阶段、进度、摘要 | FR-031 |
-| API 文档 | GET | `/swagger-ui.html` 或 `/swagger-ui/index.html` | Swagger UI | FR-041 |
+### 5.4 API 设计
 
-统一响应：
+详见 [`plan-api.md`](plan-api.md)，核心接口包括：业务注册、维度 CRUD、数据空间写入/查询、演示数据任务。
 
-```json
-{
-  "success": true,
-  "code": "OK",
-  "message": "success",
-  "data": {},
-  "error": null
-}
+数据流概要：
+
+```text
+写入：POST /api/{biz}/space/write → INSERT ... ON DUPLICATE KEY UPDATE space_t（2^d 行）
+查询：GET  /api/{biz}/space/query?{坐标}&date={日期} → SELECT 指标列 FROM space_t（1 行）
 ```
-
-分页响应建议：
-
-```json
-{
-  "items": [],
-  "pageNo": 1,
-  "pageSize": 20,
-  "total": 0
-}
-```
-
-错误码建议：
-
-| 错误码 | 场景 |
-|---|---|
-| `VALIDATION_ERROR` | 参数校验失败 |
-| `DIMENSION_CODE_DUPLICATED` | 维度编码重复 |
-| `DIMENSION_NOT_FOUND` | 维度不存在 |
-| `DIMENSION_IN_USE` | 禁止删除被使用维度时使用；MVP 默认禁用不硬删 |
-| `RECORD_NOT_FOUND` | 数据记录不存在 |
-| `QUERY_TOO_BROAD` | 查询范围过大或 pageSize 超限 |
-| `DEMO_JOB_NOT_FOUND` | 生成任务不存在 |
-| `DEMO_JOB_FAILED` | 生成任务失败 |
-| `DATABASE_UNAVAILABLE` | 数据库不可用 |
 
 ### 5.5 删除策略
 
@@ -404,22 +342,9 @@ pending -> initializing -> generating -> writing -> summarizing -> completed
 
 ### 5.7 前端交付
 
-推荐 React + Vite + TypeScript，前端以独立服务方式在 Compose 中运行，默认通过 Nginx 静态托管构建产物。
+详见 [`plan-page.md`](plan-page.md)。React + Vite + TypeScript，独立工程 `big365-web/`，Nginx 容器托管。
 
-页面结构：
-
-| 页面 | 路径 | 职责 |
-|---|---|---|
-| 首页 | `/` | 默认演示效果、关键指标、示例查询结果 |
-| 数据生成 | `/demo-data` | 参数表单、创建任务、轮询状态、摘要展示 |
-| 维度管理 | `/dimensions` | 维度列表、创建、编辑、禁用 |
-| 数据管理 | `/space` | 数据空间：坐标查询、写入向导 |
-| 组合查询 | `/query` | 多维筛选、时间范围、分页结果 |
-| 文档入口 | `/docs` | 链接快速开始、概念模型、API 文档、教程 |
-
-对应 ADR：
-
-- `ADR-004-frontend-delivery.md`
+对应 ADR：[`ADR-004-frontend-delivery.md`](ADR-004-frontend-delivery.md)。
 
 ### 5.8 Compose 交付
 
@@ -552,6 +477,9 @@ big365-api/src/main/resources/db/
 [NEW] tests/e2e/test_query.py
 [NEW] tests/e2e/test_demo_data.py
 [NEW] tests/e2e/test_frontend.py
+[NEW] .sddu/specs-tree-root/specs-tree-big365/plan-api.md
+[NEW] .sddu/specs-tree-root/specs-tree-big365/plan-page.md
+[NEW] .sddu/specs-tree-root/specs-tree-big365/plan-db.md
 [NEW] .sddu/specs-tree-root/specs-tree-big365/ADR-001-big365-star-independent-project.md
 [NEW] .sddu/specs-tree-root/specs-tree-big365/ADR-002-mysql-ordinary-table-model.md
 [NEW] .sddu/specs-tree-root/specs-tree-big365/ADR-003-async-demo-data-generation.md
