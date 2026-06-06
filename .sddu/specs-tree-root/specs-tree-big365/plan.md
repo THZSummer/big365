@@ -386,104 +386,133 @@ big365-api/src/main/resources/db/
 
 ```text
 [NEW] README.md
-[NEW] big365-api/pom.xml
-[NEW] big365-api/Dockerfile
-[NEW] big365-api/src/main/java/org/big365/api/Big365ApiApplication.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/HealthController.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/DimensionController.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/SpaceController.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/QueryController.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/DemoDataController.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/dto/ApiResponse.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/dto/PageResponse.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/dto/DimensionDtos.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/dto/SpaceDtos.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/dto/QueryDtos.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/dto/DemoDataDtos.java
-[NEW] big365-api/src/main/java/org/big365/api/domain/Dimension.java
-[NEW] big365-api/src/main/java/org/big365/api/domain/Coordinate.java
-[NEW] big365-api/src/main/java/org/big365/api/domain/Vector.java
-[NEW] big365-api/src/main/java/org/big365/api/domain/SpaceCell.java
-[NEW] big365-api/src/main/java/org/big365/api/domain/DemoGenerationJob.java
-[NEW] big365-api/src/main/java/org/big365/api/domain/DemoJobStatus.java
-[NEW] big365-api/src/main/java/org/big365/api/service/DimensionService.java
-[NEW] big365-api/src/main/java/org/big365/api/service/SpaceService.java
-[NEW] big365-api/src/main/java/org/big365/api/service/QueryService.java
-[NEW] big365-api/src/main/java/org/big365/api/service/DemoDataService.java
-[NEW] big365-api/src/main/java/org/big365/api/service/DemoDataGenerator.java
-[NEW] big365-api/src/main/java/org/big365/api/repository/DimensionRepository.java
-[NEW] big365-api/src/main/java/org/big365/api/repository/SpaceRepository.java
-[NEW] big365-api/src/main/java/org/big365/api/repository/DemoJobRepository.java
-[NEW] big365-api/src/main/java/org/big365/api/mapper/DimensionMapper.java
-[NEW] big365-api/src/main/java/org/big365/api/mapper/SpaceMapper.java
-[NEW] big365-api/src/main/java/org/big365/api/mapper/DemoJobMapper.java
-[NEW] big365-api/src/main/java/org/big365/api/config/OpenApiConfig.java
-[NEW] big365-api/src/main/java/org/big365/api/config/AsyncConfig.java
-[NEW] big365-api/src/main/java/org/big365/api/config/WebConfig.java
-[NEW] big365-api/src/main/java/org/big365/api/exception/GlobalExceptionHandler.java
-[NEW] big365-api/src/main/java/org/big365/api/exception/BusinessException.java
-[NEW] big365-api/src/main/java/org/big365/api/exception/ErrorCode.java
-[NEW] big365-api/src/main/resources/application.yml
-[NEW] big365-api/src/main/resources/mapper/DimensionMapper.xml
-[NEW] big365-api/src/main/resources/mapper/SpaceMapper.xml
-[NEW] big365-api/src/main/resources/mapper/DemoJobMapper.xml
-[NEW] big365-api/src/test/java/org/big365/api/DimensionServiceTest.java
-[NEW] big365-api/src/test/java/org/big365/api/SpaceServiceTest.java
-[NEW] big365-api/src/test/java/org/big365/api/QueryServiceTest.java
-[NEW] big365-api/src/test/java/org/big365/api/DemoDataServiceTest.java
-[NEW] big365-api/src/test/java/org/big365/api/controller/DimensionApiTest.java
-[NEW] big365-api/src/test/java/org/big365/api/controller/SpaceApiTest.java
-[NEW] big365-api/src/test/java/org/big365/api/controller/QueryApiTest.java
-[NEW] big365-api/src/test/java/org/big365/api/controller/DemoDataApiTest.java
-[NEW] big365-api/src/main/java/org/big365/api/demo/DemoDataGenerator.java
-[NEW] big365-api/src/main/java/org/big365/api/demo/DemoDataParameters.java
-[NEW] big365-api/src/main/java/org/big365/api/demo/DemoDataBatch.java
-[NEW] big365-api/src/test/java/org/big365/api/demo/DemoDataGeneratorTest.java
-[NEW] big365-web/package.json
-[NEW] big365-web/index.html
-[NEW] big365-web/vite.config.ts
-[NEW] big365-web/tsconfig.json
-[NEW] big365-web/Dockerfile
-[NEW] big365-web/nginx.conf
-[NEW] big365-web/src/main.tsx
-[NEW] big365-web/src/App.tsx
-[NEW] big365-web/src/api/client.ts
-[NEW] big365-web/src/api/types.ts
-[NEW] big365-web/src/pages/HomePage.tsx
-[NEW] big365-web/src/pages/DemoDataPage.tsx
-[NEW] big365-web/src/pages/DimensionsPage.tsx
-[NEW] big365-web/src/pages/SpacePage.tsx
-[NEW] big365-web/src/pages/QueryPage.tsx
-[NEW] big365-web/src/pages/DocsPage.tsx
-[NEW] big365-web/src/components/Layout.tsx
-[NEW] big365-web/src/components/ErrorBanner.tsx
-[NEW] big365-web/src/components/Loading.tsx
-[NEW] big365-web/src/styles.css
-[NEW] big365-web/src/__tests__/App.test.tsx
-[NEW] compose.yml
+
+[NEW] big365-api/                                   # ===== 后端工程 =====
+├── pom.xml
+├── Dockerfile
+├── src/main/java/org/big365/api/
+│   ├── Big365ApiApplication.java
+│   ├── config/
+│   │   ├── OpenApiConfig.java
+│   │   ├── AsyncConfig.java
+│   │   └── WebConfig.java
+│   ├── common/
+│   │   ├── ApiResponse.java
+│   │   ├── PageResponse.java
+│   │   ├── ErrorCode.java
+│   │   ├── BusinessException.java
+│   │   └── GlobalExceptionHandler.java
+│   ├── biz/                                         # 业务注册
+│   │   ├── BizController.java
+│   │   ├── BizService.java
+│   │   └── BizRepository.java
+│   ├── dimension/
+│   │   ├── DimensionController.java
+│   │   ├── DimensionService.java
+│   │   ├── DimensionMapper.java
+│   │   ├── Dimension.java
+│   │   └── dto/
+│   ├── space/                                       # 数据空间写入+查询
+│   │   ├── SpaceController.java
+│   │   ├── SpaceService.java
+│   │   ├── SpaceMapper.java
+│   │   ├── SpaceCell.java
+│   │   └── dto/
+│   ├── demo/
+│   │   ├── DemoDataController.java
+│   │   ├── DemoDataService.java
+│   │   ├── DemoDataGenerator.java
+│   │   ├── DemoDataParameters.java
+│   │   ├── DemoDataBatch.java
+│   │   ├── DemoGenerationJob.java
+│   │   ├── DemoJobStatus.java
+│   │   ├── DemoJobMapper.java
+│   │   └── dto/
+│   └── model/
+│       ├── Vector.java
+│       ├── Coordinate.java
+│       └── DimensionConcept.java
+├── src/main/resources/
+│   ├── application.yml
+│   ├── db/
+│   │   └── 001_schema.sql                           # 系统表 DDL（biz_registry_t）
+│   └── mapper/
+│       ├── DimensionMapper.xml
+│       ├── SpaceMapper.xml
+│       └── DemoJobMapper.xml
+└── src/test/java/org/big365/api/
+    ├── biz/BizServiceTest.java
+    ├── dimension/DimensionServiceTest.java
+    ├── space/SpaceServiceTest.java
+    ├── demo/DemoDataServiceTest.java
+    ├── demo/DemoDataGeneratorTest.java
+    ├── controller/
+    │   ├── BizApiTest.java
+    │   ├── DimensionApiTest.java
+    │   ├── SpaceApiTest.java
+    │   └── DemoDataApiTest.java
+
+[NEW] big365-web/                                   # ===== 前端工程 =====
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── index.html
+├── Dockerfile
+├── nginx.conf
+├── src/
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── api/
+│   │   ├── client.ts
+│   │   └── types.ts
+│   ├── pages/
+│   │   ├── HomePage.tsx
+│   │   ├── BizPage.tsx
+│   │   ├── DimensionsPage.tsx
+│   │   ├── SpacePage.tsx
+│   │   ├── DemoDataPage.tsx
+│   │   └── DocsPage.tsx
+│   ├── components/
+│   │   ├── Layout.tsx
+│   │   ├── BizSelector.tsx
+│   │   ├── CoordinateInput.tsx
+│   │   ├── ErrorBanner.tsx
+│   │   └── Loading.tsx
+│   └── styles/
+│       └── global.css
+└── tests/
+    └── App.test.tsx
+
+[NEW] compose.yml                                  # ===== 部署 =====
 [NEW] compose.podman.yml
 [NEW] .env.example
-[NEW] big365-api/src/main/resources/db/001_schema.sql
-[NEW] docs/quick-start.md
-[NEW] docs/concepts.md
-[NEW] docs/api.md
-[NEW] docs/log-analysis-tutorial.md
-[NEW] docs/troubleshooting.md
-[NEW] tests/e2e/requirements.txt
-[NEW] tests/e2e/run_e2e.py
-[NEW] tests/e2e/test_health.py
-[NEW] tests/e2e/test_dimension_crud.py
-[NEW] tests/e2e/test_space_crud.py
-[NEW] tests/e2e/test_query.py
-[NEW] tests/e2e/test_demo_data.py
-[NEW] tests/e2e/test_frontend.py
-[NEW] .sddu/specs-tree-root/specs-tree-big365/plan-api.md
-[NEW] .sddu/specs-tree-root/specs-tree-big365/plan-page.md
-[NEW] .sddu/specs-tree-root/specs-tree-big365/plan-db.md
-[NEW] .sddu/specs-tree-root/specs-tree-big365/ADR-001-big365-star-independent-project.md
-[NEW] .sddu/specs-tree-root/specs-tree-big365/ADR-002-mysql-ordinary-table-model.md
-[NEW] .sddu/specs-tree-root/specs-tree-big365/ADR-003-async-demo-data-generation.md
-[NEW] .sddu/specs-tree-root/specs-tree-big365/ADR-004-frontend-delivery.md
+
+[NEW] docs/                                        # ===== 文档 =====
+├── quick-start.md
+├── concepts.md
+├── api.md
+├── log-analysis-tutorial.md
+└── troubleshooting.md
+
+[NEW] tests/e2e/                                   # ===== E2E 测试 =====
+├── requirements.txt
+├── run_e2e.py
+├── test_health.py
+├── test_biz_register.py
+├── test_dimension_crud.py
+├── test_space_crud.py
+├── test_demo_data.py
+└── test_frontend.py
+
+[NEW] .sddu/specs-tree-root/specs-tree-big365/     # ===== 规划文档 =====
+├── plan.md
+├── plan-api.md
+├── plan-db.md
+├── plan-page.md
+├── ADR-001-big365-star-independent-project.md
+├── ADR-002-mysql-ordinary-table-model.md
+├── ADR-003-async-demo-data-generation.md
+└── ADR-004-frontend-delivery.md
 ```
 
 ### 6.3 修改文件
