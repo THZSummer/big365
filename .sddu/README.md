@@ -2,9 +2,9 @@
 
 ## 目录简介
 
-本目录是 SDDU 工作空间，用于保存 big365 的需求挖掘、规范、计划、任务与验证等工作流产物。当前已包含 `specs-tree-root/` 目录，核心内容来自 `specs-tree-root/specs-tree-big365/discovery.md`：big365 定位为面向中小业务的开源多维数据服务，目标是通过 docker-compose / podman-compose、REST API、React 演示前端、MySQL 存储和自解释文档完成低复杂度快速接入闭环。
+本目录是 SDDU 工作空间，用于保存 big365 的需求挖掘、规范、计划、任务与验证等工作流产物。当前已包含 `specs-tree-root/` 目录，核心内容来自 `specs-tree-root/specs-tree-big365/`：big365 定位为面向中小业务的开源多维数据服务，目标是通过 docker-compose / podman-compose、REST API、React 演示前端、MySQL 存储和自解释文档完成低复杂度快速接入闭环。
 
-`discovery.md` 已完成格式优化，并加入多处 Mermaid 图，覆盖用户体验闭环、用户旅程、需求优先级、推荐架构、验收路径、版本演进、验证计划和目录拆分建议；其中 5.3 验收路径和前端范围已更新为：用户打开演示页面后应先看到默认演示效果 / 示例查询结果，再进入演示数据生成向导；生成过程中应可感知初始化、生成、写入、统计等阶段，增强参与感；前端表达保持业务化，避免要求用户直接理解维度等内部概念。
+当前 big365 目录已包含需求挖掘报告 `discovery.md`、规范文档 `spec.md` 和结构化规范数据 `spec.json`。规范状态为 `specified`，优先级为 `P0`，标识符为 `FR-BIG365-MVP`。
 
 ## 目录结构
 
@@ -15,7 +15,9 @@
     ├── README.md            # 规范与需求目录导航
     └── specs-tree-big365/    # big365 目录
         ├── README.md        # big365 目录导航
-        └── discovery.md     # 需求挖掘报告：big365
+        ├── discovery.md     # 需求挖掘报告：big365
+        ├── spec.md          # big365 规范文档
+        └── spec.json        # big365 结构化规范数据
 ```
 
 ## 文件说明
@@ -28,7 +30,7 @@
 
 | 目录 | 说明 |
 |------|------|
-| [specs-tree-root/](specs-tree-root/README.md) | 规范与需求目录集合，当前包含 big365 的需求挖掘结果与目录导航。 |
+| [specs-tree-root/](specs-tree-root/README.md) | 规范与需求目录集合，当前包含 big365 的需求挖掘报告、规范文档和结构化规范数据。 |
 
 ## 上级目录
 
