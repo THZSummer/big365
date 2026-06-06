@@ -4,57 +4,57 @@
   "agent": {
     "sddu": {
       "description": "SDDU Master Coordinator - 智能路由助手",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu.md}"
     },
     "sddu-help": {
       "description": "SDDU Help Assistant - 使用指南",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-help.md}"
     },
     "sddu-discovery": {
       "description": "SDDU 需求挖掘专家 (阶段 0/6)",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-discovery.md}"
     },
     "sddu-spec": {
       "description": "SDDU 规范编写专家 (阶段 1/6)",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-spec.md}"
     },
     "sddu-plan": {
       "description": "SDDU 技术规划专家 (阶段 2/6)",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-plan.md}"
     },
     "sddu-tasks": {
       "description": "SDDU 任务分解专家 (阶段 3/6)",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-tasks.md}"
     },
     "sddu-build": {
       "description": "SDDU 任务实现专家 (阶段 4/6)",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-build.md}"
     },
     "sddu-review": {
       "description": "SDDU 代码审查专家 (阶段 5/6)",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-review.md}"
     },
     "sddu-validate": {
       "description": "SDDU 验证专家 (阶段 6/6)",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-validate.md}"
     },
     "sddu-roadmap": {
       "description": "SDDU Roadmap 规划专家 - 多版本路线图规划",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-roadmap.md}"
     },
     "sddu-docs": {
       "description": "SDDU 目录导航生成器 - 扫描目录结构生成 README 导航",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "volcengine-plan/deepseek-v4-flash",
       "prompt": "{file:.opencode/agents/sddu-docs.md}"
     }
   },
