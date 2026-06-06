@@ -1,0 +1,305 @@
+{
+  "feature": "big365",
+  "feature_id": "FR-BIG365-MVP",
+  "status": "tasked",
+  "created": "2026-06-06",
+  "summary": {
+    "total": 14,
+    "complexity": { "S": 3, "M": 8, "L": 3 },
+    "waves": 6
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "name": "历史资产归档",
+      "description": "将现有 Java 多模块工程、文档和 README 迁移到 backup/legacy-20260606/ 目录，为新 MVP 工程释放命名空间",
+      "complexity": "S",
+      "wave": 1,
+      "dependencies": [],
+      "covered_requirements": ["FR-001", "FR-002"],
+      "files": [
+        {"action": "MOVE", "path": "pom.xml → backup/legacy-20260606/pom.xml"},
+        {"action": "MOVE", "path": "big365-core/ → backup/legacy-20260606/big365-core/"},
+        {"action": "MOVE", "path": "big365-web/ → backup/legacy-20260606/big365-web/"},
+        {"action": "MOVE", "path": "doc/ → backup/legacy-20260606/doc/"},
+        {"action": "MOVE", "path": "README.md → backup/legacy-20260606/README.md"},
+        {"action": "MOVE", "path": "README.en.md → backup/legacy-20260606/README.en.md"},
+        {"action": "NEW", "path": "backup/legacy-20260606/README.md"}
+      ],
+      "verify_command": "test ! -f pom.xml && test ! -d big365-core && test ! -d big365-web && test ! -d doc && echo OK"
+    },
+    {
+      "id": "TASK-002",
+      "name": "big365-api 工程骨架",
+      "description": "创建 Spring Boot 3.5.14 + Java 21 + MyBatis 的独立 Maven 工程，包含完整目录结构和基础配置",
+      "complexity": "M",
+      "wave": 1,
+      "dependencies": [],
+      "covered_requirements": ["FR-039", "FR-041"],
+      "files": [
+        {"action": "NEW", "path": "big365-api/pom.xml"},
+        {"action": "NEW", "path": "big365-api/Dockerfile"},
+        {"action": "NEW", "path": "big365-api/scripts/start.sh"},
+        {"action": "NEW", "path": "big365-api/scripts/stop.sh"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/Big365ApiApplication.java"},
+        {"action": "NEW", "path": "big365-api/src/main/resources/application.yml"},
+        {"action": "NEW", "path": "big365-api/src/main/resources/db/001_schema.sql"},
+        {"action": "NEW", "path": "big365-api/.gitignore"}
+      ],
+      "verify_command": "cd big365-api && mvn compile -q && echo OK"
+    },
+    {
+      "id": "TASK-003",
+      "name": "big365-web 工程骨架",
+      "description": "创建 React + Vite + TypeScript 独立前端工程，包含完整目录结构和基础配置",
+      "complexity": "M",
+      "wave": 1,
+      "dependencies": [],
+      "covered_requirements": ["FR-032"],
+      "files": [
+        {"action": "NEW", "path": "big365-web/package.json"},
+        {"action": "NEW", "path": "big365-web/tsconfig.json"},
+        {"action": "NEW", "path": "big365-web/vite.config.ts"},
+        {"action": "NEW", "path": "big365-web/index.html"},
+        {"action": "NEW", "path": "big365-web/Dockerfile"},
+        {"action": "NEW", "path": "big365-web/scripts/start.sh"},
+        {"action": "NEW", "path": "big365-web/scripts/stop.sh"},
+        {"action": "NEW", "path": "big365-web/src/main.tsx"},
+        {"action": "NEW", "path": "big365-web/src/App.tsx"},
+        {"action": "NEW", "path": "big365-web/src/styles/global.css"},
+        {"action": "NEW", "path": "big365-web/.gitignore"}
+      ],
+      "verify_command": "cd big365-web && npm install && npm run build && echo OK"
+    },
+    {
+      "id": "TASK-004",
+      "name": "后端通用基础设施",
+      "description": "实现统一响应格式、错误码枚举、全局异常处理、健康检查接口、OpenAPI/Swagger 配置",
+      "complexity": "M",
+      "wave": 2,
+      "dependencies": ["TASK-002"],
+      "covered_requirements": ["FR-004", "FR-040", "FR-041", "FR-042", "NFR-006", "NFR-012"],
+      "files": [
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/common/ApiResponse.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/common/PageResponse.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/common/ErrorCode.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/common/BusinessException.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/common/GlobalExceptionHandler.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/config/OpenApiConfig.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/config/AsyncConfig.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/config/WebConfig.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/controller/HealthController.java"}
+      ],
+      "verify_command": "curl -s http://localhost:8080/api/health | python3 -c 'import sys,json; d=json.load(sys.stdin); assert d[\"success\"]'"
+    },
+    {
+      "id": "TASK-005",
+      "name": "根级部署与入口文件",
+      "description": "创建仓库级 compose.yml（MySQL+backend+frontend）、.env.example 和根 README.md",
+      "complexity": "S",
+      "wave": 2,
+      "dependencies": ["TASK-001"],
+      "covered_requirements": ["FR-001", "FR-002", "FR-003", "FR-043"],
+      "files": [
+        {"action": "NEW", "path": "compose.yml"},
+        {"action": "NEW", "path": "compose.podman.yml"},
+        {"action": "NEW", "path": ".env.example"},
+        {"action": "NEW", "path": "README.md"}
+      ],
+      "verify_command": "docker compose -f compose.yml config --quiet && echo OK"
+    },
+    {
+      "id": "TASK-006",
+      "name": "前端基础框架",
+      "description": "实现 Axios API client、TypeScript 类型定义、Layout 组件、React Router 路由、全局样式",
+      "complexity": "S",
+      "wave": 2,
+      "dependencies": ["TASK-003"],
+      "covered_requirements": ["FR-032", "FR-038"],
+      "files": [
+        {"action": "NEW", "path": "big365-web/src/api/client.ts"},
+        {"action": "NEW", "path": "big365-web/src/api/types.ts"},
+        {"action": "NEW", "path": "big365-web/src/components/Layout.tsx"},
+        {"action": "NEW", "path": "big365-web/src/components/ErrorBanner.tsx"},
+        {"action": "NEW", "path": "big365-web/src/components/Loading.tsx"},
+        {"action": "MODIFY", "path": "big365-web/src/App.tsx"},
+        {"action": "MODIFY", "path": "big365-web/src/main.tsx"},
+        {"action": "NEW", "path": "big365-web/src/pages/HomePage.tsx"},
+        {"action": "NEW", "path": "big365-web/src/pages/BizPage.tsx"},
+        {"action": "NEW", "path": "big365-web/src/pages/DimensionsPage.tsx"},
+        {"action": "NEW", "path": "big365-web/src/pages/SpacePage.tsx"},
+        {"action": "NEW", "path": "big365-web/src/pages/DemoDataPage.tsx"},
+        {"action": "NEW", "path": "big365-web/src/pages/DocsPage.tsx"}
+      ],
+      "verify_command": "cd big365-web && npx tsc --noEmit && npm run build && echo OK"
+    },
+    {
+      "id": "TASK-007",
+      "name": "业务注册 API",
+      "description": "实现系统表 big365_biz_registry_t DDL、业务注册接口（动态创建 3 张业务表）、业务列表查询。dimensions_t/space_t/demo_jobs_t 按注册参数动态生成",
+      "complexity": "L",
+      "wave": 3,
+      "dependencies": ["TASK-004"],
+      "covered_requirements": ["FR-003", "FR-005", "FR-006", "FR-007", "FR-008", "NFR-010"],
+      "files": [
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/biz/BizController.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/biz/BizService.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/biz/BizRepository.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dto/BizRegisterRequest.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dto/BizRegisterResponse.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dto/BizInfo.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dto/DimensionDef.java"},
+        {"action": "MODIFY", "path": "big365-api/src/main/resources/db/001_schema.sql"},
+        {"action": "NEW", "path": "big365-api/src/main/resources/mapper/BizRegistryMapper.xml"}
+      ],
+      "verify_command": "curl -s -X POST http://localhost:8080/api/biz/register -H 'Content-Type: application/json' -d '{\"biz_name\":\"log_monitor\",\"biz_label\":\"test\",\"dimensions\":[{\"column_name\":\"a\",\"display_name\":\"app\",\"leaf_min\":1,\"leaf_max\":10}],\"date_range\":{\"from\":\"20260101\",\"to\":\"20260107\"}}' | python3 -c 'import sys,json; d=json.load(sys.stdin); assert d[\"success\"] and len(d[\"data\"][\"tables_created\"])==3'"
+    },
+    {
+      "id": "TASK-008",
+      "name": "维度 CRUD API + 集成测试",
+      "description": "实现对已注册业务的维度元数据 CRUD（创建/列表/详情/更新/禁用），禁用策略不物理删除。编写 Python 集成测试",
+      "complexity": "M",
+      "wave": 4,
+      "dependencies": ["TASK-007"],
+      "covered_requirements": ["FR-009", "FR-010", "FR-011", "FR-012", "FR-013", "FR-014", "FR-049"],
+      "files": [
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dimension/DimensionController.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dimension/DimensionService.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dimension/DimensionMapper.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dimension/Dimension.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dimension/dto/CreateDimensionRequest.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/dimension/dto/UpdateDimensionRequest.java"},
+        {"action": "NEW", "path": "big365-api/src/main/resources/mapper/DimensionMapper.xml"},
+        {"action": "NEW", "path": "big365-api/src/test/python/conftest.py"},
+        {"action": "NEW", "path": "big365-api/src/test/python/test_dimension_crud.py"},
+        {"action": "NEW", "path": "big365-api/src/test/python/requirements.txt"}
+      ],
+      "verify_command": "cd big365-api/src/test/python && pip install -r requirements.txt && pytest test_dimension_crud.py -v"
+    },
+    {
+      "id": "TASK-009",
+      "name": "Space 写入查询 API + 集成测试",
+      "description": "实现数据空间写入（级联更新 2^d 行）和查询（坐标定位+读指标列）。编写 Python 集成测试覆盖 Grand Total 和下钻验证",
+      "complexity": "L",
+      "wave": 4,
+      "dependencies": ["TASK-007"],
+      "covered_requirements": ["FR-015", "FR-016", "FR-017", "FR-018", "FR-019", "FR-020", "FR-021", "FR-022", "FR-023", "FR-024", "FR-025", "FR-026", "FR-049"],
+      "files": [
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/SpaceController.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/SpaceService.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/SpaceMapper.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/SpaceCell.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/dto/SpaceWriteRequest.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/dto/SpaceWriteResponse.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/dto/SpaceQueryRequest.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/space/dto/SpaceQueryResponse.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/model/Vector.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/model/Coordinate.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/model/DimensionConcept.java"},
+        {"action": "NEW", "path": "big365-api/src/main/resources/mapper/SpaceMapper.xml"},
+        {"action": "NEW", "path": "big365-api/src/test/python/test_space_write.py"},
+        {"action": "NEW", "path": "big365-api/src/test/python/test_space_query.py"}
+      ],
+      "verify_command": "cd big365-api/src/test/python && pytest test_space_write.py test_space_query.py -v"
+    },
+    {
+      "id": "TASK-010",
+      "name": "前端业务管理与首页",
+      "description": "实现首页（概念卡片+快速入口）和业务管理页（业务列表+注册 Modal），含 BizSelector 组件",
+      "complexity": "M",
+      "wave": 4,
+      "dependencies": ["TASK-006", "TASK-007"],
+      "covered_requirements": ["FR-032", "FR-033", "FR-034"],
+      "files": [
+        {"action": "MODIFY", "path": "big365-web/src/pages/HomePage.tsx"},
+        {"action": "MODIFY", "path": "big365-web/src/pages/BizPage.tsx"},
+        {"action": "NEW", "path": "big365-web/src/components/BizSelector.tsx"},
+        {"action": "NEW", "path": "big365-web/src/api/biz.ts"}
+      ],
+      "verify_command": "cd big365-web && npx tsc --noEmit && npm run build && echo OK"
+    },
+    {
+      "id": "TASK-011",
+      "name": "演示数据生成 API + 集成测试",
+      "description": "实现异步演示数据生成（small/medium/large 三档），状态流转 pending→completed/failed，后台线程批量写入 space_t。编写 Python 集成测试",
+      "complexity": "L",
+      "wave": 5,
+      "dependencies": ["TASK-009"],
+      "covered_requirements": ["FR-027", "FR-028", "FR-029", "FR-030", "FR-031", "FR-049"],
+      "files": [
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/DemoDataController.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/DemoDataService.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/DemoDataGenerator.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/DemoDataParameters.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/DemoGenerationJob.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/DemoJobStatus.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/DemoJobMapper.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/dto/CreateDemoJobRequest.java"},
+        {"action": "NEW", "path": "big365-api/src/main/java/org/big365/api/demo/dto/DemoJobResponse.java"},
+        {"action": "NEW", "path": "big365-api/src/main/resources/mapper/DemoJobMapper.xml"},
+        {"action": "NEW", "path": "big365-api/src/test/python/test_demo_data.py"}
+      ],
+      "verify_command": "cd big365-api/src/test/python && pytest test_demo_data.py -v"
+    },
+    {
+      "id": "TASK-012",
+      "name": "前端维度/空间/演示/文档页面",
+      "description": "实现维度管理、数据空间（坐标查询+写入向导+下钻演示）、演示数据（任务创建+进度轮询）、文档入口页面",
+      "complexity": "M",
+      "wave": 5,
+      "dependencies": ["TASK-010"],
+      "covered_requirements": ["FR-034", "FR-035", "FR-036", "FR-037", "FR-038"],
+      "files": [
+        {"action": "MODIFY", "path": "big365-web/src/pages/DimensionsPage.tsx"},
+        {"action": "MODIFY", "path": "big365-web/src/pages/SpacePage.tsx"},
+        {"action": "MODIFY", "path": "big365-web/src/pages/DemoDataPage.tsx"},
+        {"action": "MODIFY", "path": "big365-web/src/pages/DocsPage.tsx"},
+        {"action": "NEW", "path": "big365-web/src/components/CoordinateInput.tsx"},
+        {"action": "NEW", "path": "big365-web/src/api/dimensions.ts"},
+        {"action": "NEW", "path": "big365-web/src/api/space.ts"},
+        {"action": "NEW", "path": "big365-web/src/api/demo.ts"}
+      ],
+      "verify_command": "cd big365-web && npx tsc --noEmit && npm run build && echo OK"
+    },
+    {
+      "id": "TASK-013",
+      "name": "文档体系",
+      "description": "编写快速开始、概念模型、API 文档入口、日志分析教程、故障排查指南。教程 curl 示例必须与实际 API 一致",
+      "complexity": "M",
+      "wave": 6,
+      "dependencies": ["TASK-009"],
+      "covered_requirements": ["FR-043", "FR-044", "FR-045", "FR-046", "FR-047", "NFR-011"],
+      "files": [
+        {"action": "NEW", "path": "docs/quick-start.md"},
+        {"action": "NEW", "path": "docs/concepts.md"},
+        {"action": "NEW", "path": "docs/api.md"},
+        {"action": "NEW", "path": "docs/log-analysis-tutorial.md"},
+        {"action": "NEW", "path": "docs/troubleshooting.md"}
+      ],
+      "verify_command": "for f in docs/quick-start.md docs/concepts.md docs/api.md docs/log-analysis-tutorial.md docs/troubleshooting.md; do test -f \"$f\" && echo \"OK: $f\" || echo \"MISSING: $f\"; done"
+    },
+    {
+      "id": "TASK-014",
+      "name": "Compose 闭环与 E2E 验证",
+      "description": "完善 Dockerfile（多阶段构建）、调优 compose 编排、编写 Playwright 前端测试、端到端一键验证脚本",
+      "complexity": "M",
+      "wave": 6,
+      "dependencies": ["TASK-004", "TASK-009", "TASK-011", "TASK-012"],
+      "covered_requirements": ["FR-003", "FR-048", "FR-049", "FR-050", "FR-051", "NFR-001", "NFR-002"],
+      "files": [
+        {"action": "MODIFY", "path": "big365-api/Dockerfile"},
+        {"action": "MODIFY", "path": "big365-web/Dockerfile"},
+        {"action": "MODIFY", "path": "compose.yml"},
+        {"action": "NEW", "path": "big365-web/tests/conftest.py"},
+        {"action": "NEW", "path": "big365-web/tests/test_home.py"},
+        {"action": "NEW", "path": "big365-web/tests/test_biz_register.py"},
+        {"action": "NEW", "path": "big365-web/tests/test_dimensions.py"},
+        {"action": "NEW", "path": "big365-web/tests/test_space.py"},
+        {"action": "NEW", "path": "big365-web/tests/test_demo_data.py"},
+        {"action": "NEW", "path": "big365-web/tests/requirements.txt"},
+        {"action": "NEW", "path": "tests/e2e/run_all.sh"}
+      ],
+      "verify_command": "bash tests/e2e/run_all.sh"
+    }
+  ]
+}
