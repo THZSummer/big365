@@ -474,74 +474,98 @@ PARTITION BY RANGE COLUMNS(a,b,c)
 | 时间扩展需要 DDL | 新增日期 = 加列 |
 | 字段膨胀 | 一年 365 列，体积增长线性 |
 
-### 7.3 应保留 vs 应放弃
+### 7.3 核心设计：全部沿用
 
-**应保留的思想：**
+除了分区表这个纯 MySQL 实现优化之外，**原始设计的核心思想必须全部沿用**。因为没有这些，big365 就退化为普通 CRUD 应用，丧失了存在的意义。
 
-1. **多维坐标空间模型**：数据不是平铺的，而是投射到多维空间中。
-2. **维度元数据独立管理**：坐标的 code/name/type/value_range 独立于事实数据。
-3. **每个业务独立表空间**：坐标表 + 维度表均按业务隔离。
-4. **计算可以前置**：后续版本可对高频聚合场景引入预计算。
-
-**MVP 首版不直接沿用的：**
-
-| 历史设计 | MVP 替代方案 |
-|---|---|
-| 0 = ALL 哨兵值 | 业务化字段（如 `app="order-service"`），聚合通过 `GROUP BY` |
-| 写入时级联更新（2^d 行） | 1 条数据 = 1 行 INSERT |
-| 日期宽列 | `time_key` 行字段 |
-| 抽象数字坐标 | 业务化字段（`app`, `endpoint`, `status_code` 等） |
-| 分区表 | 普通表 |
+| 核心设计 | 是否沿用 | 说明 |
+|---|---|---|
+| 多维坐标空间模型 | **沿用** | 数据不扁平化，投射到多维坐标空间中 |
+| 0 = ALL 哨兵 | **沿用** | 这是预计算上卷的核心机制 |
+| 级联更新（写入即计算） | **沿用** | 1 条数据 → 2^d 行更新，计算全部前置 |
+| 日期宽列 | **沿用** | 时间序列横向展开，单行读取完整时间线 |
+| 抽象数字坐标 | **沿用** | 列名用 a/b/c 或业务短名，含义由维度表解释 |
+| 每业务独立表空间 | **沿用** | 独立坐标表 + 独立维度表，数据隔离 |
+| 分区表 | **暂不沿用** | MySQL 分区是性能优化手段，MVP 首版用普通表即可 |
 
 ### 7.4 MVP 数据库设计建议
 
-#### `big365_dimensions`
+MVP 首版接入一个业务（日志分析），创建以下表：
+
+#### `big365_dimensions`（维度元数据表）
 
 ```sql
 CREATE TABLE big365_dimensions (
-  id         BIGINT PRIMARY KEY AUTO_INCREMENT,
-  code       VARCHAR(64) NOT NULL UNIQUE,   -- 维度编码
-  name       VARCHAR(128) NOT NULL,          -- 展示名
-  type       VARCHAR(32) NOT NULL,           -- 'dimension' | 'metric'
-  data_type  VARCHAR(32),                    -- 'string' | 'number' | 'time' | 'enum'
-  value_range VARCHAR(256),                  -- '1~10' | '200,301,404,500'
-  description VARCHAR(512),
-  enabled    TINYINT NOT NULL DEFAULT 1,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  id           INT PRIMARY KEY AUTO_INCREMENT,
+  column_name  VARCHAR(64) NOT NULL,         -- 坐标列名，如 'a', 'b', 'c'
+  display_name VARCHAR(128) NOT NULL,         -- 业务含义，如 'app', 'endpoint', 'statusCode'
+  leaf_min     INT NOT NULL,                  -- 叶子取值下限（不含 0），如 1
+  leaf_max     INT NOT NULL,                  -- 叶子取值上限，如 10
+  data_type    VARCHAR(32) DEFAULT 'number',  -- 'number' | 'string' | 'enum'
+  description  VARCHAR(512),
+  enabled      TINYINT NOT NULL DEFAULT 1,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
 
-注意：当前 MVP 首版只服务一个业务。后续新业务应创建独立的 `big365_{业务名}_dimensions`。
-
-#### `big365_records`
+示例数据（日志分析业务）：
 
 ```sql
-CREATE TABLE big365_records (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  time_key DATETIME NOT NULL,
-  app VARCHAR(128),
-  endpoint VARCHAR(255),
-  status_code VARCHAR(16),
-  env VARCHAR(64),
-  region VARCHAR(64),
-  request_count BIGINT NOT NULL DEFAULT 0,
-  error_count BIGINT NOT NULL DEFAULT 0,
-  avg_latency DECIMAL(12,2) NOT NULL DEFAULT 0,
-  dimensions_json JSON,
-  metrics_json JSON,
-  deleted TINYINT NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  KEY idx_record_time (time_key),
-  KEY idx_record_app_time (app, time_key),
-  KEY idx_record_endpoint_time (endpoint, time_key),
-  KEY idx_record_status_time (status_code, time_key),
-  KEY idx_record_env_region_time (env, region, time_key)
+INSERT INTO big365_dimensions (column_name, display_name, leaf_min, leaf_max) VALUES
+  ('a', 'app',          1, 10),
+  ('b', 'endpoint',     1, 100),
+  ('c', 'status_code',  1, 50),    -- 常用状态码枚举
+  ('d', 'env',          1, 5),     -- dev/test/staging/prod/dr
+  ('e', 'region',       1, 10);
+```
+
+#### `big365_cube`（物化立方体数据表）
+
+```sql
+CREATE TABLE big365_cube (
+  pid        INT UNSIGNED NOT NULL,
+  a          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..10=叶子
+  b          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..100=叶子
+  c          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..50=叶子
+  d          TINYINT UNSIGNED NOT NULL,     -- 0=ALL, 1..5=叶子
+  e          TINYINT UNSIGNED NOT NULL,     -- 0=ALL, 1..10=叶子
+  `20260101` INT UNSIGNED NOT NULL DEFAULT 0,
+  `20260102` INT UNSIGNED NOT NULL DEFAULT 0,
+  -- ... 日期列按需扩展
+  PRIMARY KEY (a, b, c, d, e),
+  INDEX idx_pid (pid)
 );
 ```
 
-#### `big365_demo_jobs`
+总行数：`(10+1) × (100+1) × (50+1) × (5+1) × (10+1) = 11 × 101 × 51 × 6 × 11 ≈ 374 万行`
+
+写入逻辑：
+
+```sql
+-- 场景：app=3, endpoint=7, status_code=500, env=prod, region=cn-east 收到 100 次请求
+-- 日期：20260101
+
+UPDATE big365_cube SET `20260101` = `20260101` + 100
+WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
+-- 2^5 = 32 行同时更新
+```
+
+查询逻辑：
+
+```sql
+-- 查 Grand Total
+SELECT `20260101` FROM big365_cube WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
+
+-- 查 app=3 的总量
+SELECT `20260101` FROM big365_cube WHERE a=3 AND b=0 AND c=0 AND d=0 AND e=0;
+
+-- 查 app=3, endpoint=7, status_code=500 的量
+SELECT `20260101` FROM big365_cube WHERE a=3 AND b=7 AND c=500 AND d=0 AND e=0;
+-- 每个查询都是 1 行读取，零聚合
+```
+
+#### `big365_demo_jobs`（演示数据生成任务表）
 
 ```sql
 CREATE TABLE big365_demo_jobs (
@@ -556,17 +580,23 @@ CREATE TABLE big365_demo_jobs (
 );
 ```
 
-### 7.5 新旧模型映射
+### 7.5 新旧模型对照
 
-| 历史模型 | 含义 | 新模型 |
-|---|---|---|
-| `bigdata_365.a` | 维度 A 坐标值（0=ALL, 1..10=叶子） | `app`（业务化字段） |
-| `bigdata_365.b` | 维度 B 坐标值（0=ALL, 1..100=叶子） | `endpoint`（业务化字段） |
-| `bigdata_365.c` | 维度 C 坐标值（0=ALL, 1..100000=叶子） | `status_code`（业务化字段） |
-| `bigdata_365.20230101` | 该坐标在该日期的聚合指标值 | `time_key` + `request_count/error_count/avg_latency` |
-| `a=0,b=0,c=0` 行 | Grand Total | `SELECT SUM(...) FROM records` |
-| `0=ALL` 语义 | 哨兵值表示上卷 | 通过是否传参数控制（体验等价） |
-| `big365_dimension` | 历史共享维度表 | `big365_{业务名}_dimensions`（每业务独立） |
+MVP 直接继承原始设计的全套核心机制，仅做以下调整：
+
+| | 原始 `bigdata_365` | MVP `big365_cube` | 说明 |
+|---|---|---|---|
+| 0=ALL 哨兵 | ✓ 沿用 | ✓ 沿用 | 核心不变 |
+| 级联更新 | ✓ 沿用 | ✓ 沿用 | 写入即计算 |
+| 日期宽列 | ✓ 沿用 | ✓ 沿用 | 时间横向展开 |
+| 抽象数字坐标 | ✓ 沿用 | ✓ 沿用 | 列名 a,b,c,d,e，含义由维度表解释 |
+| 每业务独立表 | ✓ 沿用 | ✓ 沿用 | 独立坐标表 + 独立维度表 |
+| 分区表 | ✓ 使用 | ✗ 暂不采用 | 普通表，后续需要再引入 |
+| 维度数 | 3 | 5 | 日志分析业务需要 5 个维度 |
+| 总行数 | 1.11 亿 | ~374 万 | 首版数据量小得多 |
+| 日期列数 | 428 | 按需扩展 | 首版只需少量日期列，后续 ALTER TABLE 加列 |
+| 表名 | `bigdata_365` | `big365_cube` | 体现「立方体」语义 |
+| 维度表 | 共享（历史遗留问题） | 每业务独立 | 数据隔离 |
 
 ---
 
@@ -644,11 +674,11 @@ EXPLAIN SELECT * FROM bigdata_365 WHERE b = 10 AND c = 10000;
 ### 9.3 MVP 当前方向
 
 ```text
-big365_records（原始记录表）
-  ├── time_key + 业务化维度列 + 指标列 + JSON 扩展
-  ├── 1 条原始数据 = 1 行写入
-  ├── 查询时通过普通 SQL 聚合（GROUP BY / SUM）
-  └── 为后续预计算聚合立方体保留数据基础
+big365_cube（物化立方体表）
+  ├── 5 维坐标列 (a,b,c,d,e) × 日期宽列
+  ├── 0=ALL 哨兵，级联更新 2^5=32 行/事件
+  ├── 查询 = 坐标定位 + 读指标，零聚合
+  └── 仅分区表暂不引入，其他核心思想完整保留
 ```
 
-既吸收「多维坐标空间」的思想，又在首版保持低复杂度和灵活演进的能力。
+MVP 不是原始设计的「简化版」或「替代版」，而是**原始设计在更小规模、更少维度、无分区优化下的直接实现**。计算前置、零聚合查询、坐标空间模型——这些才是 big365 存在的意义。
