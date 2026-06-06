@@ -38,7 +38,7 @@ specs-tree-big365/
 | [spec.md](spec.md) | 规范文档：big365 - 标识符 `FR-BIG365-MVP`，状态 `specified`，优先级 `P0`；定义上下文、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵。 | specified |
 | [spec.json](spec.json) | big365 结构化规范数据 - 供后续计划、任务和验证阶段使用。 | specified |
 | [plan.md](plan.md) | 技术计划：big365 - 状态 `planned`；结论为先归档历史工程，再创建 `big365-api` 与 `big365-web` 两个顶层独立工程，并引用 `plan-db.md` 作为数据库设计依据。 | planned |
-| [plan-db.md](plan-db.md) | 数据库设计分析：深度剖析 `bigdata_365` 作为预计算物化立方体的 0=ALL 哨兵机制、级联写入（2^d 更新）和零计算查询范式。 | planned |
+| [plan-db.md](plan-db.md) | 数据库设计分析（四部分）：核心设计思想（预计算立方体/0=ALL哨兵/级联更新/多业务隔离）→ 如何存（5 张表详解）→ 如何查（零聚合坐标定位）→ 落地到 MVP（DDL + 模型映射）。 | planned |
 | [ADR-001-big365-star-independent-project.md](ADR-001-big365-star-independent-project.md) | ADR-001：归档历史工程并保留 API/Web 两个顶层独立工程。 | ACCEPTED |
 | [ADR-002-mysql-ordinary-table-model.md](ADR-002-mysql-ordinary-table-model.md) | ADR-002：MySQL 普通表采用结构化列 + JSON 扩展模型。 | ACCEPTED |
 | [ADR-003-async-demo-data-generation.md](ADR-003-async-demo-data-generation.md) | ADR-003：演示数据生成采用异步 Job 模型。 | ACCEPTED |
