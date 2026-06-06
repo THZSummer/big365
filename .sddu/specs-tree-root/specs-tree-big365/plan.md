@@ -81,7 +81,8 @@ big365/
 │   ├── README.md              # 后端开发、测试、部署说明
 │   ├── src/main/java/...      # dimension、space、demo、model 等内部包
 │   ├── src/main/resources/db/ # 数据库初始化 / migration 脚本
-│   └── src/test/              # 后端单元测试与集成测试
+│   ├── src/test/java/          # 单元测试（JUnit 5）
+│   └── src/test/python/         # 集成测试（调用实际 API）
 ├── big365-web/                # React 演示前端独立工程
 │   ├── Dockerfile             # 前端镜像构建文件
 │   ├── nginx.conf             # 前端静态资源与 /api 代理配置
@@ -440,17 +441,26 @@ big365-api/src/main/resources/db/
 │       ├── DimensionMapper.xml
 │       ├── SpaceMapper.xml
 │       └── DemoJobMapper.xml
-└── src/test/java/org/big365/api/
-    ├── biz/BizServiceTest.java
-    ├── dimension/DimensionServiceTest.java
-    ├── space/SpaceServiceTest.java
-    ├── demo/DemoDataServiceTest.java
-    ├── demo/DemoDataGeneratorTest.java
-    ├── controller/
-    │   ├── BizApiTest.java
-    │   ├── DimensionApiTest.java
-    │   ├── SpaceApiTest.java
-    │   └── DemoDataApiTest.java
+└── src/test/
+    ├── java/org/big365/api/                          # 单元测试
+    │   ├── biz/BizServiceTest.java
+    │   ├── dimension/DimensionServiceTest.java
+    │   ├── space/SpaceServiceTest.java
+    │   ├── demo/DemoDataServiceTest.java
+    │   ├── demo/DemoDataGeneratorTest.java
+    │   └── controller/
+    │       ├── BizApiTest.java
+    │       ├── DimensionApiTest.java
+    │       ├── SpaceApiTest.java
+    │       └── DemoDataApiTest.java
+    └── python/                                        # 集成测试（HTTP 调用实际接口）
+        ├── conftest.py
+        ├── test_health.py
+        ├── test_biz_register.py
+        ├── test_dimension_crud.py
+        ├── test_space_write.py
+        ├── test_space_query.py
+        └── test_demo_data.py
 
 [NEW] big365-web/                                   # ===== 前端工程 =====
 ├── package.json
