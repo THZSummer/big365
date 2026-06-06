@@ -79,7 +79,7 @@ big365/
 ├── big365-api/                # Spring Boot 后端 API 独立工程
 │   ├── Dockerfile             # 后端镜像构建文件
 │   ├── README.md              # 后端开发、测试、部署说明
-│   ├── src/main/java/...      # dimension、cube、demo、model 等内部包
+│   ├── src/main/java/...      # dimension、space、demo、model 等内部包
 │   ├── src/main/resources/db/ # 数据库初始化 / migration 脚本
 │   └── src/test/              # 后端单元测试与集成测试
 ├── big365-web/                # React 演示前端独立工程
@@ -132,22 +132,22 @@ flowchart LR
 HTTP Request -> DimensionController -> DimensionService -> DimensionRepository -> MyBatis Mapper -> big365_swks_{业务名}_dimensions_t
 ```
 
-#### 立方体写入数据流
+#### 数据空间写入数据流
 
 ```text
-HTTP Request -> CubeController -> CubeService -> 坐标校验 -> 级联 UPDATE big365_swks_{业务名}_cube_t（2^d 行）
+HTTP Request -> SpaceController -> SpaceService -> 坐标校验 -> 级联 UPDATE big365_swks_{业务名}_space_t（2^d 行）
 ```
 
-#### 立方体查询数据流
+#### 数据空间查询数据流
 
 ```text
-HTTP Request -> CubeController -> 坐标解析 -> SELECT 指标列 FROM big365_swks_{业务名}_cube_t（1 行读取）
+HTTP Request -> SpaceController -> 坐标解析 -> SELECT 指标列 FROM big365_swks_{业务名}_space_t（1 行读取）
 ```
 
 #### 演示数据生成数据流
 
 ```text
-POST /api/demo-data/jobs -> 创建 job -> 后台线程执行生成 -> 批量写入 big365_swks_{业务名}_cube_t（级联更新） -> 更新 job 状态 -> GET job 查询进度
+POST /api/demo-data/jobs -> 创建 job -> 后台线程执行生成 -> 批量写入 big365_swks_{业务名}_space_t（级联更新） -> 更新 job 状态 -> GET job 查询进度
 ```
 
 ### 2.5 依赖关系图
@@ -176,7 +176,7 @@ flowchart TD
 |---|---|
 | 描述 | 先将历史 `pom.xml`、`big365-core`、`big365-web`、`doc`、历史 README 迁移到 `backup/legacy-20260606/`，再在根目录新建 `big365-api` 与 `big365-web` 两个顶层独立工程；`docs/`、`tests/e2e/`、`compose.yml` 作为仓库级资产；演示数据生成作为 `big365-api` 内部业务包。 |
 | 优点 | 完全符合 Spec 红线；释放 `big365-web` 给 React 前端；顶层工程数量少，认知成本低；每个独立工程都可独立构建、测试、部署；非业务资产不被误拆为工程。 |
-| 缺点 | 后端初期承载 dimension、cube、demo 等多个业务包，需要内部边界设计清晰；若后续复杂度显著上升，可能需要再拆。 |
+| 缺点 | 后端初期承载 dimension、space、demo 等多个业务包，需要内部边界设计清晰；若后续复杂度显著上升，可能需要再拆。 |
 | 风险评估 | 低到中等。当前两工程足以支撑端到端闭环，后续 3 个月内再拆顶层业务模块概率较低。 |
 | 预估工作量 | 8-11 人日，另加 0.5 人日完成历史资产迁移与入口说明。 |
 
@@ -247,7 +247,7 @@ compose.podman.yml           # Podman Compose 覆盖配置，可选
 ```text
 org.big365.api.common      # 统一响应、异常、错误码、分页
 org.big365.api.dimension   # 维度元数据管理
-org.big365.api.cube        # 立方体写入、坐标查询、级联更新
+org.big365.api.space        # 数据空间写入、坐标查询、级联更新
 org.big365.api.demo        # 演示数据生成与 Job 状态
 org.big365.api.model       # Vector / Coordinate / Dimension 概念模型
 org.big365.api.config      # Spring / OpenAPI / Async / Web 配置
@@ -269,7 +269,7 @@ org.big365.api.config      # Spring / OpenAPI / Async / Web 配置
 
 ### 5.3 数据模型与表结构
 
-数据库设计的深度分析单独沉淀在 [`plan-db.md`](plan-db.md)。该文档深度分析了 `bigdata_365` 作为预计算物化立方体的核心思想（0=ALL 哨兵、级联写入 2^d 行、零计算查询），以及每个业务独立坐标表+独立维度表的多业务隔离模式。
+数据库设计的深度分析单独沉淀在 [`plan-db.md`](plan-db.md)。该文档深度分析了 `bigdata_365` 作为预计算物化数据空间的核心思想（0=ALL 哨兵、级联写入 2^d 行、零计算查询），以及每个业务独立坐标表+独立维度表的多业务隔离模式。
 
 MVP 直接继承原始设计的全套核心机制。表结构分两类：系统固定表 `big365_biz_registry_t`（部署时创建），业务表 `big365_swks_{业务名}_{功能}_t`（用户注册业务时由 API 动态生成，维度数、坐标列数、日期列数均按参数决定）。详见 [`plan-db.md` §7.4](plan-db.md)。
 
@@ -289,7 +289,7 @@ MVP 直接继承原始设计的全套核心机制。表结构分两类：系统�
 | `enabled` | tinyint | 是否启用 |
 | `created_at` / `updated_at` | datetime | 审计字段 |
 
-#### `big365_swks_{业务名}_cube_t`（物化立方体数据表，模板）
+#### `big365_swks_{业务名}_space_t`（物化数据空间数据表，模板）
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -306,7 +306,7 @@ MVP 直接继承原始设计的全套核心机制。表结构分两类：系统�
 写入示例（{业务名}=log_monitor，5 维）：
 
 ```sql
-UPDATE big365_swks_log_monitor_cube_t SET `20260101` = `20260101` + 100
+UPDATE big365_swks_log_monitor_space_t SET `20260101` = `20260101` + 100
 WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 -- 2^5 = 32 行同时更新
 ```
@@ -314,7 +314,7 @@ WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
 查询示例：
 
 ```sql
-SELECT `20260101` FROM big365_swks_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
+SELECT `20260101` FROM big365_swks_log_monitor_space_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
 -- 一行返回，零聚合
 ```
 
@@ -330,8 +330,8 @@ SELECT `20260101` FROM big365_swks_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 
 | 维度详情 | GET | `/api/dimensions/{id}` | 查询维度 | FR-010 |
 | 更新维度 | PUT | `/api/dimensions/{id}` | 更新名称、描述、启用状态 | FR-012 |
 | 禁用维度 | DELETE | `/api/dimensions/{id}` | MVP 采用禁用策略 | FR-013 |
-| 写入数据 | POST | `/api/cube/write` | 写入坐标+日期+指标值，触发级联更新 | FR-015, FR-020 |
-| 查询指标 | GET | `/api/cube/query?a=3&b=7&c=500&d=0&e=0&date=20260101` | 按坐标读指标，零聚合 | FR-016, FR-021~FR-026 |
+| 写入数据 | POST | `/api/space/write` | 写入坐标+日期+指标值，触发级联更新 | FR-015, FR-020 |
+| 查询指标 | GET | `/api/space/query?a=3&b=7&c=500&d=0&e=0&date=20260101` | 按坐标读指标，零聚合 | FR-016, FR-021~FR-026 |
 | 创建生成任务 | POST | `/api/demo-data/jobs` | 异步生成演示数据 | FR-027~FR-031 |
 | 查询任务状态 | GET | `/api/demo-data/jobs/{jobId}` | 查询阶段、进度、摘要 | FR-031 |
 | API 文档 | GET | `/swagger-ui.html` 或 `/swagger-ui/index.html` | Swagger UI | FR-041 |
@@ -378,7 +378,7 @@ SELECT `20260101` FROM big365_swks_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 
 | 对象 | MVP 策略 | 理由 |
 |---|---|---|
 | Dimension | 禁用，不物理删除 | 避免已写入记录引用维度后语义丢失 |
-| Cube Cell | 软删除 | 支持一致 CRUD 语义并降低误删风险 |
+| Space Cell | 软删除 | 支持一致 CRUD 语义并降低误删风险 |
 | Demo Job | 保留历史任务摘要 | 便于前端展示与问题诊断 |
 
 ### 5.6 演示数据生成
@@ -413,7 +413,7 @@ pending -> initializing -> generating -> writing -> summarizing -> completed
 | 首页 | `/` | 默认演示效果、关键指标、示例查询结果 |
 | 数据生成 | `/demo-data` | 参数表单、创建任务、轮询状态、摘要展示 |
 | 维度管理 | `/dimensions` | 维度列表、创建、编辑、禁用 |
-| 数据管理 | `/cube` | 立方体：坐标查询、写入向导 |
+| 数据管理 | `/space` | 数据空间：坐标查询、写入向导 |
 | 组合查询 | `/query` | 多维筛选、时间范围、分页结果 |
 | 文档入口 | `/docs` | 链接快速开始、概念模型、API 文档、教程 |
 
@@ -466,31 +466,31 @@ big365-api/src/main/resources/db/
 [NEW] big365-api/src/main/java/org/big365/api/Big365ApiApplication.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/HealthController.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/DimensionController.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/CubeController.java
+[NEW] big365-api/src/main/java/org/big365/api/controller/SpaceController.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/QueryController.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/DemoDataController.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/dto/ApiResponse.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/dto/PageResponse.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/dto/DimensionDtos.java
-[NEW] big365-api/src/main/java/org/big365/api/controller/dto/CubeDtos.java
+[NEW] big365-api/src/main/java/org/big365/api/controller/dto/SpaceDtos.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/dto/QueryDtos.java
 [NEW] big365-api/src/main/java/org/big365/api/controller/dto/DemoDataDtos.java
 [NEW] big365-api/src/main/java/org/big365/api/domain/Dimension.java
 [NEW] big365-api/src/main/java/org/big365/api/domain/Coordinate.java
 [NEW] big365-api/src/main/java/org/big365/api/domain/Vector.java
-[NEW] big365-api/src/main/java/org/big365/api/domain/CubeCell.java
+[NEW] big365-api/src/main/java/org/big365/api/domain/SpaceCell.java
 [NEW] big365-api/src/main/java/org/big365/api/domain/DemoGenerationJob.java
 [NEW] big365-api/src/main/java/org/big365/api/domain/DemoJobStatus.java
 [NEW] big365-api/src/main/java/org/big365/api/service/DimensionService.java
-[NEW] big365-api/src/main/java/org/big365/api/service/CubeService.java
+[NEW] big365-api/src/main/java/org/big365/api/service/SpaceService.java
 [NEW] big365-api/src/main/java/org/big365/api/service/QueryService.java
 [NEW] big365-api/src/main/java/org/big365/api/service/DemoDataService.java
 [NEW] big365-api/src/main/java/org/big365/api/service/DemoDataGenerator.java
 [NEW] big365-api/src/main/java/org/big365/api/repository/DimensionRepository.java
-[NEW] big365-api/src/main/java/org/big365/api/repository/CubeRepository.java
+[NEW] big365-api/src/main/java/org/big365/api/repository/SpaceRepository.java
 [NEW] big365-api/src/main/java/org/big365/api/repository/DemoJobRepository.java
 [NEW] big365-api/src/main/java/org/big365/api/mapper/DimensionMapper.java
-[NEW] big365-api/src/main/java/org/big365/api/mapper/CubeMapper.java
+[NEW] big365-api/src/main/java/org/big365/api/mapper/SpaceMapper.java
 [NEW] big365-api/src/main/java/org/big365/api/mapper/DemoJobMapper.java
 [NEW] big365-api/src/main/java/org/big365/api/config/OpenApiConfig.java
 [NEW] big365-api/src/main/java/org/big365/api/config/AsyncConfig.java
@@ -500,14 +500,14 @@ big365-api/src/main/resources/db/
 [NEW] big365-api/src/main/java/org/big365/api/exception/ErrorCode.java
 [NEW] big365-api/src/main/resources/application.yml
 [NEW] big365-api/src/main/resources/mapper/DimensionMapper.xml
-[NEW] big365-api/src/main/resources/mapper/CubeMapper.xml
+[NEW] big365-api/src/main/resources/mapper/SpaceMapper.xml
 [NEW] big365-api/src/main/resources/mapper/DemoJobMapper.xml
 [NEW] big365-api/src/test/java/org/big365/api/DimensionServiceTest.java
-[NEW] big365-api/src/test/java/org/big365/api/CubeServiceTest.java
+[NEW] big365-api/src/test/java/org/big365/api/SpaceServiceTest.java
 [NEW] big365-api/src/test/java/org/big365/api/QueryServiceTest.java
 [NEW] big365-api/src/test/java/org/big365/api/DemoDataServiceTest.java
 [NEW] big365-api/src/test/java/org/big365/api/controller/DimensionApiTest.java
-[NEW] big365-api/src/test/java/org/big365/api/controller/CubeApiTest.java
+[NEW] big365-api/src/test/java/org/big365/api/controller/SpaceApiTest.java
 [NEW] big365-api/src/test/java/org/big365/api/controller/QueryApiTest.java
 [NEW] big365-api/src/test/java/org/big365/api/controller/DemoDataApiTest.java
 [NEW] big365-api/src/main/java/org/big365/api/demo/DemoDataGenerator.java
@@ -527,7 +527,7 @@ big365-api/src/main/resources/db/
 [NEW] big365-web/src/pages/HomePage.tsx
 [NEW] big365-web/src/pages/DemoDataPage.tsx
 [NEW] big365-web/src/pages/DimensionsPage.tsx
-[NEW] big365-web/src/pages/CubePage.tsx
+[NEW] big365-web/src/pages/SpacePage.tsx
 [NEW] big365-web/src/pages/QueryPage.tsx
 [NEW] big365-web/src/pages/DocsPage.tsx
 [NEW] big365-web/src/components/Layout.tsx
@@ -548,7 +548,7 @@ big365-api/src/main/resources/db/
 [NEW] tests/e2e/run_e2e.py
 [NEW] tests/e2e/test_health.py
 [NEW] tests/e2e/test_dimension_crud.py
-[NEW] tests/e2e/test_cube_crud.py
+[NEW] tests/e2e/test_space_crud.py
 [NEW] tests/e2e/test_query.py
 [NEW] tests/e2e/test_demo_data.py
 [NEW] tests/e2e/test_frontend.py
@@ -606,7 +606,7 @@ big365-api/src/main/resources/db/
 | 1 | 历史资产归档与工程骨架 | `backup/legacy-20260606/`、`big365-api`、`big365-web`、根级 `compose.yml` 可启动空壳 | 无 |
 | 2 | 数据库与后端基础 | DDL、健康检查、统一响应、异常处理、OpenAPI | 阶段 1 |
 | 3 | 维度 CRUD | 维度模型、Mapper、Service、API、测试 | 阶段 2 |
-| 4 | 立方体写入与查询 | cube 表、级联 UPDATE、坐标查询、API、测试 | 阶段 3 |
+| 4 | 数据空间写入与查询 | space 表、级联 UPDATE、坐标查询、API、测试 | 阶段 3 |
 | 5 | 组合查询 | Query DTO、动态 SQL、分页/限制、测试 | 阶段 4 |
 | 6 | 演示数据生成 | Job 表、异步执行、批量写入、进度查询 | 阶段 4 |
 | 7 | React 前端 | 首页、数据生成、维度/数据 CRUD、组合查询 | 阶段 3-6 |
@@ -621,7 +621,7 @@ big365-api/src/main/resources/db/
 
 | 范围 | 测试 |
 |---|---|
-| 领域模型 | Dimension / Coordinate / Vector / CubeCell 映射测试 |
+| 领域模型 | Dimension / Coordinate / Vector / SpaceCell 映射测试 |
 | 服务逻辑 | 维度唯一性、禁用策略、记录校验、查询参数校验 |
 | API | MockMvc 或 SpringBootTest 覆盖 CRUD、查询、数据生成 |
 | 异常 | 校验错误、重复编码、不存在资源、数据库不可用模拟 |
@@ -656,7 +656,7 @@ big365-api/src/main/resources/db/
 | FR-001~FR-004 启动与部署 | Compose 服务拓扑、健康检查、初始化 SQL |
 | FR-005~FR-008 核心模型 | Domain 模型、DTO 映射、概念文档 |
 | FR-009~FR-014 维度 CRUD | Dimension API、Service、Mapper、唯一约束、禁用策略 |
-| FR-015~FR-020 业务数据 CRUD | Cube 写入 API、级联更新、坐标查询、软删除、指标字段 |
+| FR-015~FR-020 业务数据 CRUD | Space 写入 API、级联更新、坐标查询、软删除、指标字段 |
 | FR-021~FR-026 组合查询 | Query API、多维过滤、时间范围、分页限制 |
 | FR-027~FR-031 演示数据生成 | 异步 Job、状态流转、批量写入、摘要 |
 | FR-032~FR-038 React 前端 | 页面结构、API client、文档入口 |
@@ -671,15 +671,15 @@ big365-api/src/main/resources/db/
 
 | Spec 开放问题 | Plan 决策 |
 |---|---|
-| OQ-001 业务数据通用模型 | 采用 Cube / Vector / Coordinate 预计算立方体模型 |
+| OQ-001 业务数据通用模型 | 采用 Space / Vector / Coordinate 预计算数据空间模型 |
 | OQ-002 Vector/Coordinate API 暴露 | 基础 API 隐藏术语，使用 `dimensions`、`filters`、`metrics`；概念文档解释映射 |
-| OQ-003 MySQL 普通表设计 | 采用预计算物化立方体模型：坐标列 + 日期宽列 + 级联更新，暂不引入分区表 |
+| OQ-003 MySQL 普通表设计 | 采用预计算物化数据空间模型：坐标列 + 日期宽列 + 级联更新，暂不引入分区表 |
 | OQ-004 查询是否聚合 | MVP 先返回明细记录与指标字段，不做复杂聚合；首页可基于返回结果做简单展示 |
 | OQ-005 百万级生成方式 | 异步任务执行，支持进度与失败原因，允许配置降级 |
 | OQ-006 前端交付 | 独立 React 前端，Compose 中由 Nginx 托管静态文件 |
 | OQ-007 Compose 文件 | 主 compose 文件复用；必要时提供 Podman override |
 | OQ-008 OpenAPI/Swagger | 纳入 MVP 必做 |
-| OQ-009 删除策略 | Dimension 禁用；Cube Cell 软删除 |
+| OQ-009 删除策略 | Dimension 禁用；Space Cell 软删除 |
 | OQ-010 文档 API 示例测试 | 纳入 E2E 验证范围，至少覆盖核心示例 |
 
 ---
@@ -689,7 +689,7 @@ big365-api/src/main/resources/db/
 | ADR | 决策 |
 |---|---|
 | `ADR-001-big365-star-independent-project.md` | 归档历史工程并新建 `big365-api` / `big365-web` 两个顶层独立工程 |
-| `ADR-002-mysql-ordinary-table-model.md` | MySQL 普通表采用预计算物化立方体模型 |
+| `ADR-002-mysql-ordinary-table-model.md` | MySQL 普通表采用预计算物化数据空间模型 |
 | `ADR-003-async-demo-data-generation.md` | 演示数据生成采用异步 Job 模型 |
 | `ADR-004-frontend-delivery.md` | React 前端独立构建并由 Nginx/Compose 交付 |
 
@@ -700,10 +700,10 @@ big365-api/src/main/resources/db/
 `@sddu-tasks big365` 应将本计划拆分为可并行任务，建议按以下工作流分组：
 
 1. 历史资产归档、`big365-api` / `big365-web` 工程骨架与根级 Compose 基础。
-2. 后端数据库：系统表 `big365_biz_registry_t` + 业务表模板（`{业务名}_dimensions_t/cube_t/demo_jobs_t`），实现按业务动态建表，统一响应、异常、OpenAPI。
+2. 后端数据库：系统表 `big365_biz_registry_t` + 业务表模板（`{业务名}_dimensions_t/space_t/demo_jobs_t`），实现按业务动态建表，统一响应、异常、OpenAPI。
 3. 维度元数据 CRUD 垂直切片。
-4. 立方体写入与查询垂直切片（坐标写入 + 级联更新 + 坐标查询）。
-5. 演示数据生成垂直切片（批量生成坐标数据、写入 cube 表）。
+4. 数据空间写入与查询垂直切片（坐标写入 + 级联更新 + 坐标查询）。
+5. 演示数据生成垂直切片（批量生成坐标数据、写入 space 表）。
 6. React 前端页面与 API client。
 7. 文档、教程、E2E 与验收脚本。
 

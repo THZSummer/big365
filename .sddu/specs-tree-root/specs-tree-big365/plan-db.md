@@ -48,7 +48,7 @@ Navicat 模型文件记录的默认 schema 为 `bigdata365`。模型中包含的
 
 | 表名 | 行数估计 | 角色 | 说明 |
 |---:|---|---|
-| `bigdata_365` | 83,670,652 | 物化多维立方体 | 坐标列 `a,b,c`，0=ALL 哨兵，含所有聚合级别行 + 日期宽列存储指标 |
+| `bigdata_365` | 83,670,652 | 物化多维数据空间 | 坐标列 `a,b,c`，0=ALL 哨兵，含所有聚合级别行 + 日期宽列存储指标 |
 | `bigdata_id` | 92,742,975 | ID 空间表 | 仅包含 `pid`，按 `pid` 分区，可能用于 ID 生成和去重 |
 | `big365_dimension` | 0 | 维度元数据表 | 记录维度内部名、外部名、别名等元数据 |
 | `vector` | 0 | 向量定义表 | 记录向量名称与别名，和核心概念 Vector 对应 |
@@ -59,11 +59,11 @@ Navicat 模型文件记录的默认 schema 为 `bigdata365`。模型中包含的
 
 # 第二部分：核心设计思想
 
-## 2. 预计算物化立方体
+## 2. 预计算物化数据空间
 
 ### 2.1 设计哲学
 
-原始 big365 的核心设计思想不是「存储原始事件数据」，而是「**将计算全部前置，构造一个预计算的物化多维立方体（Materialized OLAP Cube）**」。
+原始 big365 的核心设计思想不是「存储原始事件数据」，而是「**将计算全部前置，构造一个预计算的物化多维数据空间（Materialized Data Space）**」。
 
 ```text
 设计原则：
@@ -238,11 +238,11 @@ a = 0                     -- 哨兵值，代表「所有 a」
 
 ```text
 当前 MVP 首版只接入一个业务（日志分析），所以：
-  - 新建坐标数据表：big365_swks_log_monitor_cube_t（物化立方体）
+  - 新建坐标数据表：big365_swks_log_monitor_space_t（物化数据空间）
   - 新建维度元数据表：big365_swks_log_monitor_dimensions_t（独立维度表）
 
 后续接入第二个业务时：
-  - big365-api 自动创建 big365_{业务2}_cube_t、big365_{业务2}_dimensions_t、big365_{业务2}_demo_jobs_t
+  - big365-api 自动创建 big365_{业务2}_space_t、big365_{业务2}_dimensions_t、big365_{业务2}_demo_jobs_t
   三张表都与第一个业务完全隔离。
 ```
 
@@ -279,7 +279,7 @@ Vector = [Coordinate(d, v) for d in dimensions]
 
 | 概念 | 表结构中的表达 | 示例 |
 |---|---|---|
-| Cube | 整张 `bigdata_365` | 包含所有聚合级别的物化立方体 |
+| Cube | 整张 `bigdata_365` | 包含所有聚合级别的物化数据空间 |
 | Dimension | 坐标列 + 维度元数据 | `a` 列 + `big365_dimension` 中的描述 |
 | Coordinate | 列名 + 列值 | `a=1`, `b=0` (0=ALL) |
 | Vector | 一行记录 | `(3, 7, 0)` = a=3,b=7,c=ALL |
@@ -291,7 +291,7 @@ Vector = [Coordinate(d, v) for d in dimensions]
 
 #### 5.2.1 表定位
 
-`bigdata_365` 是物化立方体的物理存储，每一行不是「原始事件」，而是某个**聚合级别下的累积指标**：
+`bigdata_365` 是物化数据空间的物理存储，每一行不是「原始事件」，而是某个**聚合级别下的累积指标**：
 
 - **叶子行（Leaf）**：`a≠0, b≠0, c≠0` — 最细粒度
 - **上卷行（Rollup）**：至少一个维度为 0 — 聚合结果
@@ -469,7 +469,7 @@ PARTITION BY RANGE COLUMNS(a,b,c)
 |---|---|
 | 写入放大 | 1 条数据 → 2^d 行更新，三维 = 8 倍，十维 = 1024 倍 |
 | 存储膨胀 | 所有聚合层级都物化存储 |
-| 维度变更成本高 | 新增维度需要重建整个立方体 |
+| 维度变更成本高 | 新增维度需要重建整个数据空间 |
 | 时间扩展需要 DDL | 新增日期 = 加列 |
 | 字段膨胀 | 一年 365 列，体积增长线性 |
 
@@ -497,7 +497,7 @@ PARTITION BY RANGE COLUMNS(a,b,c)
 
 每个业务动态生成：3 张
   big365_swks_{业务名}_dimensions_t              -- 维度元数据
-  big365_swks_{业务名}_cube_t                    -- 物化立方体
+  big365_swks_{业务名}_space_t                    -- 物化数据空间
   big365_swks_{业务名}_demo_jobs_t               -- 演示数据任务
 
 总表数 = 1 + 3 × 注册业务数
@@ -557,7 +557,7 @@ CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_dimensions_t (
 
 表创建后，写入该业务的所有维度定义。例如用户定义了 5 个维度，则 INSERT 5 行。
 
-#### 7.4.6 业务表模板二：`big365_swks_{业务名}_cube_t`（物化立方体）
+#### 7.4.6 业务表模板二：`big365_swks_{业务名}_space_t`（物化数据空间）
 
 > **该表结构由维度定义动态决定：坐标列数 = 维度数，每列类型根据 leaf_max 选择（TINYINT / SMALLINT / MEDIUMINT / INT）。**
 
@@ -565,7 +565,7 @@ CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_dimensions_t (
 -- 模板：{维度列} 由 dimensions_t 中的 column_name 和 leaf_max 动态生成
 --        {日期列} 由用户指定的日期范围动态生成
 
-CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_cube_t (
+CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_space_t (
   pid        INT UNSIGNED NOT NULL,
   {维度1列}  {根据leaf_max选择的整数类型} UNSIGNED NOT NULL,  -- 0=ALL, 1..N=叶子
   {维度2列}  {根据leaf_max选择的整数类型} UNSIGNED NOT NULL,
@@ -582,7 +582,7 @@ CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_cube_t (
 
 | 参数 | 来源 |
 |---|---|
-| 表名 | `big365_swks_{业务名}_cube_t` |
+| 表名 | `big365_swks_{业务名}_space_t` |
 | 坐标列名 | `dimensions_t.column_name` |
 | 坐标列类型 | `leaf_max ≤ 255 → TINYINT；≤ 65535 → SMALLINT；≤ 16777215 → MEDIUMINT；else INT` |
 | 坐标列数 | `dimensions_t` 的行数 |
@@ -626,11 +626,11 @@ CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_demo_jobs_t (
 2. big365-api 执行：
    a. INSERT INTO big365_biz_registry_t (biz_name, biz_label, dimension_count) VALUES (...)
    b. CREATE TABLE big365_swks_log_monitor_dimensions_t (...)
-   c. CREATE TABLE big365_swks_log_monitor_cube_t (维度列 + 日期列)
+   c. CREATE TABLE big365_swks_log_monitor_space_t (维度列 + 日期列)
    d. CREATE TABLE big365_swks_log_monitor_demo_jobs_t (...)
    e. INSERT INTO big365_swks_log_monitor_dimensions_t (5 行维度定义)
 
-3. 用户即可向 big365_swks_log_monitor_cube_t 写入和查询数据。
+3. 用户即可向 big365_swks_log_monitor_space_t 写入和查询数据。
 ```
 
 #### 7.4.9 表清单一览
@@ -639,7 +639,7 @@ CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_demo_jobs_t (
 |---|---|---|---|
 | `big365_biz_registry_t` | 系统表 | 部署时 | 已注册业务清单 |
 | `big365_swks_{业务名}_dimensions_t` | 业务表 | 业务注册时 | 维度元数据 |
-| `big365_swks_{业务名}_cube_t` | 业务表 | 业务注册时 | 物化立方体 |
+| `big365_swks_{业务名}_space_t` | 业务表 | 业务注册时 | 物化数据空间 |
 | `big365_swks_{业务名}_demo_jobs_t` | 业务表 | 业务注册时 | 演示数据任务 |
 
 共 `1 + 3N` 张表（N = 注册业务数）。
@@ -648,7 +648,7 @@ CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_demo_jobs_t (
 
 MVP 直接继承原始设计的全套核心机制，仅做以下调整：
 
-| | 原始 `bigdata_365` | MVP `big365_swks_{业务名}_cube_t` | 说明 |
+| | 原始 `bigdata_365` | MVP `big365_swks_{业务名}_space_t` | 说明 |
 |---|---|---|---|
 | 0=ALL 哨兵 | ✓ 沿用 | ✓ 沿用 | 核心不变 |
 | 级联更新 | ✓ 沿用 | ✓ 沿用 | 写入即计算 |
@@ -659,7 +659,7 @@ MVP 直接继承原始设计的全套核心机制，仅做以下调整：
 | 维度数 | 3 | 5 | 日志分析业务需要 5 个维度 |
 | 总行数 | 1.11 亿 | ~374 万 | 首版数据量小得多 |
 | 日期列数 | 428 | 按需扩展 | 首版只需少量日期列，后续 ALTER TABLE 加列 |
-| 表名 | `bigdata_365` | `big365_swks_{业务名}_cube_t` | 体现立方体语义 + 业务归属 |
+| 表名 | `bigdata_365` | `big365_swks_{业务名}_space_t` | 体现数据空间语义 + 业务归属 |
 | 维度表 | 共享 `big365_dimension` | `big365_swks_{业务名}_dimensions_t` | 每业务独立 |
 
 ---
@@ -732,13 +732,13 @@ EXPLAIN SELECT * FROM bigdata_365 WHERE b = 10 AND c = 10000;
 ### 9.2 对 MVP 的价值
 
 1. **理解 big365 的「多维」基因**：big365 不是普通 CRUD 平台，而是天然围绕维度、坐标、聚合来思考数据的。
-2. **知道 MVP 的设计边界**：MVP 的目标是低复杂度、快速试用，不直接复制预计算立方体。
-3. **保留演进路径**：当 MVP 进入后续版本并需要更多高级特性时，可在现有物化立方体模型上扩展分区表、自动日期列扩展、异步预计算等优化。
+2. **知道 MVP 的设计边界**：MVP 的目标是低复杂度、快速试用，不直接复制预计算数据空间。
+3. **保留演进路径**：当 MVP 进入后续版本并需要更多高级特性时，可在现有物化数据空间模型上扩展分区表、自动日期列扩展、异步预计算等优化。
 
 ### 9.3 MVP 当前方向
 
 ```text
-big365_swks_{业务名}_cube_t（物化立方体表）
+big365_swks_{业务名}_space_t（物化数据空间表）
   ├── N 维坐标列 × 日期宽列
   ├── 0=ALL 哨兵，级联更新 2^N 行/事件
   ├── 查询 = 坐标定位 + 读指标，零聚合
