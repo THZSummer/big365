@@ -489,47 +489,64 @@ PARTITION BY RANGE COLUMNS(a,b,c)
 
 ### 7.4 MVP 数据库设计建议
 
-#### 7.4.1 表命名规范
+#### 7.4.1 总表量
 
 ```text
-命名模式：big365_swks_{业务名}_{功能}_t     -- 业务空间表
-         big365_{功能}_t                    -- 系统表（无 swks 即系统级）
+系统固定表：1 张
+  big365_biz_registry_t                          -- 已注册业务清单
 
-示例：
-  big365_swks_log_monitor_dimensions_t     -- 日志监控业务的维度表
-  big365_swks_log_monitor_cube_t           -- 日志监控业务的立方体表
-  big365_swks_log_monitor_demo_jobs_t      -- 日志监控业务的演示数据任务表
+每个业务动态生成：3 张
+  big365_swks_{业务名}_dimensions_t              -- 维度元数据
+  big365_swks_{业务名}_cube_t                    -- 物化立方体
+  big365_swks_{业务名}_demo_jobs_t               -- 演示数据任务
 
-  big365_swks_iot_device_dimensions_t      -- 物联网业务的维度表
-  big365_swks_iot_device_cube_t            -- 物联网业务的立方体表
-
-  big365_biz_registry_t                    -- 系统表：已注册业务清单
-  big365_config_t                          -- 系统表：全局配置
+总表数 = 1 + 3 × 注册业务数
 ```
 
-#### 7.4.2 核心约束：必须支持按业务动态生成表
-
-**新接入一个业务 = 系统自动创建该业务的全套表**，不能依赖手动 DDL。
+#### 7.4.2 表命名规范
 
 ```text
-约束：
-  1. big365-api 必须具备「按业务创建表」的能力。
-  2. 创建表的参数：业务名称 + 维度定义（列名/取值范围）+ 日期列范围。
-  3. 表结构根据维度数、各维取值范围、日期范围动态生成。
-  4. 维度表、立方体表、任务表三张一起创建。
+big365_swks_{业务名}_{功能}_t    -- 业务空间表（带 swks = service workspace）
+big365_{功能}_t                  -- 系统表（不带 swks 即系统级）
 ```
 
-#### 7.4.3 维度元数据表
+#### 7.4.3 核心约束
 
-以日志分析业务（`log_monitor`）为例：
+**系统表是固定的（随 big365-api 部署创建），业务表是模板化的（用户注册新业务时由 API 动态生成）**，不能依赖手动 DDL。
+
+#### 7.4.4 系统表：`big365_biz_registry_t`（已注册业务清单）
+
+系统部署时创建，后续只 INSERT/UPDATE，不动态生成。
 
 ```sql
-CREATE TABLE IF NOT EXISTS big365_swks_log_monitor_dimensions_t (
+CREATE TABLE IF NOT EXISTS big365_biz_registry_t (
+  id              INT PRIMARY KEY AUTO_INCREMENT,
+  biz_name        VARCHAR(64) NOT NULL UNIQUE,   -- 业务名称，即 {业务名} 段
+  biz_label       VARCHAR(128),                   -- 业务中文描述
+  dimension_count INT NOT NULL,                   -- 维度数
+  status          VARCHAR(16) NOT NULL DEFAULT 'active',  -- 'active' | 'disabled'
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+用途：
+
+- 记录所有已注册的业务及其维度数。
+- 新业务注册时，先 INSERT 该表，再动态建业务表。
+- 前端 / API 根据该表展示可用业务列表。
+
+#### 7.4.5 业务表模板一：`big365_swks_{业务名}_dimensions_t`（维度元数据）
+
+> **该表在每个业务注册时动态创建，以下为模板（DDL 中 `{业务名}`、`{列名}` 均为占位符）。**
+
+```sql
+CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_dimensions_t (
   id           INT PRIMARY KEY AUTO_INCREMENT,
-  column_name  VARCHAR(64) NOT NULL,         -- 坐标列名，如 'a', 'b', 'c'
-  display_name VARCHAR(128) NOT NULL,         -- 业务含义，如 'app', 'endpoint', 'statusCode'
-  leaf_min     INT NOT NULL,                  -- 叶子取值下限（不含 0），如 1
-  leaf_max     INT NOT NULL,                  -- 叶子取值上限，如 10
+  column_name  VARCHAR(64) NOT NULL,         -- 坐标列名，如 'a', 'b'
+  display_name VARCHAR(128) NOT NULL,         -- 业务含义，如 'app', 'endpoint'
+  leaf_min     INT NOT NULL,                  -- 叶子取值下限（不含 0）
+  leaf_max     INT NOT NULL,                  -- 叶子取值上限
   data_type    VARCHAR(32) DEFAULT 'number',  -- 'number' | 'string' | 'enum'
   description  VARCHAR(512),
   enabled      TINYINT NOT NULL DEFAULT 1,
@@ -538,79 +555,94 @@ CREATE TABLE IF NOT EXISTS big365_swks_log_monitor_dimensions_t (
 );
 ```
 
-示例数据：
+表创建后，写入该业务的所有维度定义。例如用户定义了 5 个维度，则 INSERT 5 行。
+
+#### 7.4.6 业务表模板二：`big365_swks_{业务名}_cube_t`（物化立方体）
+
+> **该表结构由维度定义动态决定：坐标列数 = 维度数，每列类型根据 leaf_max 选择（TINYINT / SMALLINT / MEDIUMINT / INT）。**
 
 ```sql
-INSERT INTO big365_swks_log_monitor_dimensions_t (column_name, display_name, leaf_min, leaf_max) VALUES
-  ('a', 'app',          1, 10),
-  ('b', 'endpoint',     1, 100),
-  ('c', 'status_code',  1, 50),
-  ('d', 'env',          1, 5),
-  ('e', 'region',       1, 10);
-```
+-- 模板：{维度列} 由 dimensions_t 中的 column_name 和 leaf_max 动态生成
+--        {日期列} 由用户指定的日期范围动态生成
 
-#### 7.4.4 物化立方体数据表
-
-```sql
--- 由 big365-api 根据维度定义动态生成 CREATE TABLE 语句
-CREATE TABLE IF NOT EXISTS big365_swks_log_monitor_cube_t (
+CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_cube_t (
   pid        INT UNSIGNED NOT NULL,
-  a          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..10=叶子（leaf_max 来自 dimensions 表）
-  b          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..100=叶子
-  c          SMALLINT UNSIGNED NOT NULL,    -- 0=ALL, 1..50=叶子
-  d          TINYINT UNSIGNED NOT NULL,     -- 0=ALL, 1..5=叶子
-  e          TINYINT UNSIGNED NOT NULL,     -- 0=ALL, 1..10=叶子
-  `20260101` INT UNSIGNED NOT NULL DEFAULT 0,
-  `20260102` INT UNSIGNED NOT NULL DEFAULT 0,
-  -- 日期列按需扩展
-  PRIMARY KEY (a, b, c, d, e),
+  {维度1列}  {根据leaf_max选择的整数类型} UNSIGNED NOT NULL,  -- 0=ALL, 1..N=叶子
+  {维度2列}  {根据leaf_max选择的整数类型} UNSIGNED NOT NULL,
+  ...
+  `{日期1}`  INT UNSIGNED NOT NULL DEFAULT 0,
+  `{日期2}`  INT UNSIGNED NOT NULL DEFAULT 0,
+  ...
+  PRIMARY KEY ({维度1列}, {维度2列}, ...),
   INDEX idx_pid (pid)
 );
 ```
 
-总行数：`11 × 101 × 51 × 6 × 11 ≈ 374 万行`。
+生成规则：
 
-写入逻辑：
+| 参数 | 来源 |
+|---|---|
+| 表名 | `big365_swks_{业务名}_cube_t` |
+| 坐标列名 | `dimensions_t.column_name` |
+| 坐标列类型 | `leaf_max ≤ 255 → TINYINT；≤ 65535 → SMALLINT；≤ 16777215 → MEDIUMINT；else INT` |
+| 坐标列数 | `dimensions_t` 的行数 |
+| 日期列名 | 用户指定日期范围，如 `20260101` ~ `20260131` |
+| 主键 | 所有坐标列 |
 
-```sql
-UPDATE big365_swks_log_monitor_cube_t SET `20260101` = `20260101` + 100
-WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
--- 2^5 = 32 行同时更新
-```
+不再使用具体业务示例——一切由注册时的维度定义和日期范围决定。
 
-查询逻辑：
+#### 7.4.7 业务表模板三：`big365_swks_{业务名}_demo_jobs_t`（演示数据任务）
 
-```sql
-SELECT `20260101` FROM big365_swks_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
--- Grand Total，一行返回
-```
-
-#### 7.4.5 演示数据生成任务表
+> **该表结构固定，每个业务注册时按模板创建。**
 
 ```sql
-CREATE TABLE IF NOT EXISTS big365_swks_log_monitor_demo_jobs_t (
-  job_id VARCHAR(64) PRIMARY KEY,
-  scale VARCHAR(32) NOT NULL,
-  parameters_json JSON,
-  status VARCHAR(32) NOT NULL,
-  progress INT NOT NULL DEFAULT 0,
-  summary_json JSON,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS big365_swks_{业务名}_demo_jobs_t (
+  job_id          VARCHAR(64) PRIMARY KEY,
+  scale           VARCHAR(32) NOT NULL,            -- 'small' | 'medium' | 'large'
+  parameters_json JSON,                             -- 生成参数（坐标数、日期范围、值域分布等）
+  status          VARCHAR(32) NOT NULL DEFAULT 'pending',
+  progress        INT NOT NULL DEFAULT 0,
+  summary_json    JSON,
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
 
-#### 7.4.6 新业务接入流程
+#### 7.4.8 新业务注册流程
 
 ```text
-1. 用户提交业务定义：业务名称 + 维度列表（每维 column_name/display_name/leaf_min/leaf_max）
-2. big365-api 生成三张表的 CREATE TABLE 语句并执行：
-     big365_swks_{业务名}_dimensions_t
-     big365_swks_{业务名}_cube_t
-     big365_swks_{业务名}_demo_jobs_t
-3. 往 dimensions_t 写入维度元数据。
-4. 业务即可开始写入和查询数据。
+1. 用户提交业务定义：
+     {
+       "biz_name":    "log_monitor",
+       "biz_label":   "日志监控",
+       "dimensions":  [
+         {"column_name": "a", "display_name": "app",         "leaf_min": 1, "leaf_max": 10},
+         {"column_name": "b", "display_name": "endpoint",    "leaf_min": 1, "leaf_max": 100},
+         ...
+       ],
+       "date_range":  {"from": "20260101", "to": "20260131"}
+     }
+
+2. big365-api 执行：
+   a. INSERT INTO big365_biz_registry_t (biz_name, biz_label, dimension_count) VALUES (...)
+   b. CREATE TABLE big365_swks_log_monitor_dimensions_t (...)
+   c. CREATE TABLE big365_swks_log_monitor_cube_t (维度列 + 日期列)
+   d. CREATE TABLE big365_swks_log_monitor_demo_jobs_t (...)
+   e. INSERT INTO big365_swks_log_monitor_dimensions_t (5 行维度定义)
+
+3. 用户即可向 big365_swks_log_monitor_cube_t 写入和查询数据。
 ```
+
+#### 7.4.9 表清单一览
+
+| 表名 | 类型 | 创建时机 | 说明 |
+|---|---|---|---|
+| `big365_biz_registry_t` | 系统表 | 部署时 | 已注册业务清单 |
+| `big365_swks_{业务名}_dimensions_t` | 业务表 | 业务注册时 | 维度元数据 |
+| `big365_swks_{业务名}_cube_t` | 业务表 | 业务注册时 | 物化立方体 |
+| `big365_swks_{业务名}_demo_jobs_t` | 业务表 | 业务注册时 | 演示数据任务 |
+
+共 `1 + 3N` 张表（N = 注册业务数）。
 
 ### 7.5 新旧模型对照
 

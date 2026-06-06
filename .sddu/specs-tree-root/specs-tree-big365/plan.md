@@ -271,11 +271,11 @@ org.big365.api.config      # Spring / OpenAPI / Async / Web 配置
 
 数据库设计的深度分析单独沉淀在 [`plan-db.md`](plan-db.md)。该文档深度分析了 `bigdata_365` 作为预计算物化立方体的核心思想（0=ALL 哨兵、级联写入 2^d 行、零计算查询），以及每个业务独立坐标表+独立维度表的多业务隔离模式。
 
-MVP 直接继承原始设计的全套核心机制。表命名规范：业务表为 `big365_swks_{业务名}_{功能}_t`，系统表为 `big365_swks_{功能}_t`（不带 swks 即系统级）。新业务接入时通过 API 动态创建全套业务表。
+MVP 直接继承原始设计的全套核心机制。表结构分两类：系统固定表 `big365_biz_registry_t`（部署时创建），业务表 `big365_swks_{业务名}_{功能}_t`（用户注册业务时由 API 动态生成，维度数、坐标列数、日期列数均按参数决定）。详见 [`plan-db.md` §7.4](plan-db.md)。
 
-以首版业务 `log_monitor`（日志分析）为例：
+以业务注册时动态生成的表为例（`{业务名}` 为占位符）：
 
-#### `big365_swks_log_monitor_dimensions_t`（维度元数据表）
+#### `big365_swks_{业务名}_dimensions_t`（维度元数据表，模板）
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -289,40 +289,36 @@ MVP 直接继承原始设计的全套核心机制。表命名规范：业务表�
 | `enabled` | tinyint | 是否启用 |
 | `created_at` / `updated_at` | datetime | 审计字段 |
 
-#### `big365_swks_log_monitor_cube_t`（物化立方体数据表）
+#### `big365_swks_{业务名}_cube_t`（物化立方体数据表，模板）
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `pid` | int unsigned | 行 ID |
-| `a` | smallint unsigned | 维度 A：0=ALL，1..10=叶子 |
-| `b` | smallint unsigned | 维度 B：0=ALL，1..100=叶子 |
-| `c` | smallint unsigned | 维度 C：0=ALL，1..50=叶子 |
-| `d` | tinyint unsigned | 维度 D：0=ALL，1..5=叶子 |
-| `e` | tinyint unsigned | 维度 E：0=ALL，1..10=叶子 |
-| `{日期列}` | int unsigned default 0 | 每列一天，值 = 该坐标在该日期的聚合指标 |
+| `a` | smallint unsigned | 维度 A（column_name 来自 dimensions_t）：0=ALL, 1..N=叶子 |
+| `b` | smallint unsigned | 维度 B：0=ALL, 1..N=叶子 |
+| ... | （坐标列数 = 维度数，列名来自 dimensions_t.column_name） | |
+| `{日期列}` | int unsigned default 0 | 每列一天（日期范围由用户指定），值 = 聚合指标 |
 
-主键：`(a, b, c, d, e)`，索引：`idx_pid(pid)`。
+主键：`({坐标列1}, {坐标列2}, ...)`，索引：`idx_pid(pid)`。
 
-总行数：`11 × 101 × 51 × 6 × 11 ≈ 374 万行`。写入时每条数据触发 `2^5 = 32` 行更新。
+总行数 = `∏(leaf_max_i + 1)`，写入时每条数据触发 `2^维度数` 行更新。
 
-写入示例：
+写入示例（{业务名}=log_monitor，5 维）：
 
 ```sql
--- app=3, endpoint=7, status_code=500, env=prod, region=cn-east，日期 20260101，+100
 UPDATE big365_swks_log_monitor_cube_t SET `20260101` = `20260101` + 100
 WHERE a IN (0,3) AND b IN (0,7) AND c IN (0,500) AND d IN (0,4) AND e IN (0,7);
--- 32 行同时更新
+-- 2^5 = 32 行同时更新
 ```
 
 查询示例：
 
 ```sql
--- Grand Total
 SELECT `20260101` FROM big365_swks_log_monitor_cube_t WHERE a=0 AND b=0 AND c=0 AND d=0 AND e=0;
 -- 一行返回，零聚合
 ```
 
-#### `big365_swks_log_monitor_demo_jobs_t`（演示数据生成任务表）
+#### `big365_swks_{业务名}_demo_jobs_t`（演示数据任务表，模板）
 
 统一前缀：`/api`
 
@@ -704,7 +700,7 @@ big365-api/src/main/resources/db/
 `@sddu-tasks big365` 应将本计划拆分为可并行任务，建议按以下工作流分组：
 
 1. 历史资产归档、`big365-api` / `big365-web` 工程骨架与根级 Compose 基础。
-2. 后端数据库：表命名规范 `big365_swks_{业务名}_{功能}_t`，实现按业务动态建表，统一响应、异常、OpenAPI。
+2. 后端数据库：系统表 `big365_biz_registry_t` + 业务表模板（`{业务名}_dimensions_t/cube_t/demo_jobs_t`），实现按业务动态建表，统一响应、异常、OpenAPI。
 3. 维度元数据 CRUD 垂直切片。
 4. 立方体写入与查询垂直切片（坐标写入 + 级联更新 + 坐标查询）。
 5. 演示数据生成垂直切片（批量生成坐标数据、写入 cube 表）。
