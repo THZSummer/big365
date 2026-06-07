@@ -1,8 +1,9 @@
 {
   "feature": "big365",
   "identifier": "FR-BIG365-MVP",
-  "status": "built",
-  "completedAt": "2026-06-06T17:30:00Z",
+  "status": "validated",
+  "builtAt": "2026-06-06T17:30:00Z",
+  "validatedAt": "2026-06-07T00:00:00Z",
   "tasks": {
     "TASK-001": { "name": "历史资产归档", "status": "completed", "wave": 1 },
     "TASK-002": { "name": "big365-api 工程骨架", "status": "completed", "wave": 1 },

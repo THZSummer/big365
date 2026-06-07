@@ -2,11 +2,11 @@
 
 ## 目录简介
 
-本目录保存 big365 的 SDDU 工作流产物，当前包括需求挖掘、规范、结构化规范数据、技术计划、数据库设计分析、架构决策记录和任务分解（14 个任务，6 个波次）。
+本目录保存 big365 的 SDDU 工作流产物，已走完 discovery → specified → planned → tasked → built → reviewed → validated 全流程（14 个任务，6 个波次，103+ 文件）。
 
 `discovery.md` 记录需求挖掘结果：big365 要成为面向中小业务的开源多维数据服务，帮助潜在用户以低复杂度、低接入成本完成多维数据建模、CRUD、组合查询和演示验证。
 
-`spec.md` 是 big365 的完整规范文档，标识符为 `FR-BIG365-MVP`，状态为 `specified`，优先级为 `P0`，创建日期为 `2026-06-06`。`spec.json` 是与规范对应的结构化数据文件，便于后续计划、任务分解和验证阶段复用。
+`spec.md` 是 big365 的完整规范文档，标识符为 `FR-BIG365-MVP`，状态为 `specified`，优先级为 `P0`，创建日期为 `2026-06-06`。`spec.json` 是与规范对应的结构化数据文件，便于后续计划、任务分解和验证阶段复用。`state.json` 追踪工作流各阶段状态。
 
 `plan.md` 是 big365 的技术计划，状态为 `planned`。最新计划结论是：先将历史工程资产迁移到 `backup/legacy-20260606/`，再新建两个顶层独立工程 `big365-api` 与 `big365-web`；文档、端到端测试和 Compose 作为仓库级资产管理。
 
@@ -15,6 +15,8 @@
 `plan-api.md` 是 REST API 设计文档，包含接口清单、核心接口示例（业务注册/写入/查询）、数据流、统一响应格式、错误码表和内部包结构。
 
 `plan-page.md` 是 React 演示前端页面设计文档，包含页面结构、路由、组件树、API Client 约定和 Vite 代理配置。
+
+`tasks.md` / `tasks.json` 是任务分解（14 个原子任务，6 个执行波次）。`build.md` 是构建实现报告（103+ 文件）。`review.md` 是代码审查报告（Round 2 通过）。`validation-report.md` 是验证报告（FR 覆盖率 90.2%，有条件通过）。
 
 ADR 文件记录已接受的关键架构决策：历史工程归档与 API/Web 两工程组织、MySQL 普通表结构化列 + JSON 扩展模型、异步演示数据生成 Job、`big365-web` React 前端独立构建并由 Compose 托管交付。
 
@@ -26,12 +28,16 @@ specs-tree-big365/
 ├── discovery.md                                   # 需求挖掘报告：big365
 ├── spec.md                                        # big365 规范文档
 ├── spec.json                                      # big365 结构化规范数据
+├── state.json                                     # big365 工作流状态追踪
 ├── plan.md                                        # big365 技术计划（主计划，引用子文档）
 ├── plan-api.md                                    # big365 REST API 设计
 ├── plan-db.md                                     # big365 原始数据库设计分析
 ├── plan-page.md                                   # big365 React 演示前端页面设计
 ├── tasks.md                                       # big365 任务分解（14 个任务，6 个波次）
 ├── tasks.json                                     # big365 结构化任务数据（供构建阶段使用）
+├── build.md                                       # big365 构建实现报告（103+ 文件）
+├── review.md                                      # big365 代码审查报告（Round 2 通过）
+├── validation-report.md                           # big365 验证报告（FR 覆盖率 90.2%）
 ├── ADR-001-big365-star-independent-project.md     # ADR-001：历史归档与 API/Web 两工程组织
 ├── ADR-002-mysql-ordinary-table-model.md          # ADR-002：MySQL 普通表模型
 ├── ADR-003-async-demo-data-generation.md          # ADR-003：异步演示数据生成
@@ -43,14 +49,18 @@ specs-tree-big365/
 | 文件 | 说明 | 状态 |
 |------|------|------|
 | [discovery.md](discovery.md) | 需求挖掘报告：big365 - 定义开源多维数据服务 MVP 的问题、用户、需求、方案、指标、范围、风险、下一步和拆分建议。 | 已完成 |
-| [spec.md](spec.md) | 规范文档：big365 - 标识符 `FR-BIG365-MVP`，状态 `specified`，优先级 `P0`；定义上下文、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵。 | specified |
+| [spec.md](spec.md) | 规范文档：big365 - 标识符 `FR-BIG365-MVP`，优先级 `P0`；定义上下文、目标、非目标、用户故事、功能需求、非功能需求、验收场景、范围边界和追踪矩阵。 | specified |
 | [spec.json](spec.json) | big365 结构化规范数据 - 供后续计划、任务和验证阶段使用。 | specified |
+| [state.json](state.json) | big365 工作流状态追踪 - 记录 14 个任务完成状态和文件统计。 | validated |
 | [plan.md](plan.md) | 技术计划（主计划）：big365 - 结论为先归档历史工程，再创建 `big365-api` 与 `big365-web` 两个顶层独立工程。引用 plan-api / plan-db / plan-page 子文档。 | planned |
 | [plan-api.md](plan-api.md) | API 设计：接口清单、核心接口示例、数据流、统一响应格式、错误码、内部包结构。 | planned |
 | [plan-db.md](plan-db.md) | 数据库设计分析（四部分）：核心设计思想→存与查→落地到 MVP，含系统表 DDL 和业务表模板。 | planned |
 | [plan-page.md](plan-page.md) | 前端页面设计：React + Vite 页面结构、路由、组件树、API Client 约定、Vite 代理配置。 | planned |
 | [tasks.md](tasks.md) | 任务分解：14 个原子任务，6 个执行波次，覆盖历史归档、API 骨架、Web 骨架、通用基础设施、根级部署、前端框架、业务注册、维度 CRUD、Space 写入查询、前端业务管理、演示数据生成、前端页面、文档体系、Compose 闭环与 E2E 验证。 | tasked |
 | [tasks.json](tasks.json) | 结构化任务数据（14 项），含依赖关系、产出文件清单、验证命令，供构建阶段使用。 | tasked |
+| [build.md](build.md) | 构建实现报告：14 个任务全部完成，103+ 文件（44 API 源文件，19 前端源文件，5 文档，6 测试文件）。 | built |
+| [review.md](review.md) | 代码审查报告（Round 2）：BLOCK-001 已修复，4 项修复全部验证通过，无阻塞问题。 | reviewed |
+| [validation-report.md](validation-report.md) | 验证报告：FR 覆盖率 90.2%（43/51 完全通过），NFR 覆盖率 91.7%，ADR 4/4 合规，结论：有条件通过。 | validated |
 | [ADR-001-big365-star-independent-project.md](ADR-001-big365-star-independent-project.md) | ADR-001：归档历史工程并保留 API/Web 两个顶层独立工程。 | ACCEPTED |
 | [ADR-002-mysql-ordinary-table-model.md](ADR-002-mysql-ordinary-table-model.md) | ADR-002：MySQL 普通表采用结构化列 + JSON 扩展模型。 | ACCEPTED |
 | [ADR-003-async-demo-data-generation.md](ADR-003-async-demo-data-generation.md) | ADR-003：演示数据生成采用异步 Job 模型。 | ACCEPTED |
@@ -90,7 +100,7 @@ big365 面向中小业务和开源评估用户，提供一个低复杂度、低�
 
 ### 下一步
 
-任务分解已完成（`tasks.md` / `tasks.json`），共 14 个原子任务，分 6 个执行波次。波次 1（历史归档、API/Web 骨架）无前置依赖，可立即执行。建议下一步启动 SDDU 构建阶段。
+big365 已走完 SDDU 全流程（discovery → specified → planned → tasked → built → reviewed → validated）。14 个任务全部完成，103+ 文件产出，FR 覆盖率 90.2%，验证结论为有条件通过。改进建议见 `validation-report.md` 末尾（补充删除端点、Java 单元测试、前端 Playwright 测试、并发控制等），建议在后续迭代中完成。
 
 ## 子目录
 
