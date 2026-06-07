@@ -24,6 +24,3 @@ logs/
 
 __pycache__/
 __pycache__/
-
-# Test reports
-src/test/python/reports/
