@@ -6,6 +6,7 @@ import DimensionsPage from './pages/DimensionsPage';
 import SpacePage from './pages/SpacePage';
 import DemoDataPage from './pages/DemoDataPage';
 import DocsPage from './pages/DocsPage';
+import DocViewer from './pages/DocViewer';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/biz/:biz/space" element={<SpacePage />} />
           <Route path="/biz/:biz/demo-data" element={<DemoDataPage />} />
           <Route path="/docs" element={<DocsPage />} />
+          <Route path="/docs/:name" element={<DocViewer />} />
         </Route>
       </Routes>
     </BrowserRouter>

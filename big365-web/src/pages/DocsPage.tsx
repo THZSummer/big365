@@ -1,9 +1,9 @@
 function DocsPage() {
   const docs = [
-    { title: '快速开始', desc: '从零启动 big365', link: 'docs/quick-start.md' },
-    { title: '概念模型', desc: '理解 Dimension / Coordinate / Vector', link: 'docs/concepts.md' },
+    { title: '快速开始', desc: '从零启动 big365', link: '/docs/quick-start' },
+    { title: '概念模型', desc: '理解 Dimension / Coordinate / Vector', link: '/docs/concepts' },
     { title: 'API 文档', desc: 'REST API 接口参考', link: '/swagger-ui.html' },
-    { title: '日志分析教程', desc: '完整端到端示例', link: 'docs/log-analysis-tutorial.md' },
+    { title: '日志分析教程', desc: '完整端到端示例', link: '/docs/log-analysis-tutorial' },
   ];
 
   return (
