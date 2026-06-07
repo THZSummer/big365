@@ -2,7 +2,8 @@ from conftest import BASE_URL
 import requests
 import time
 
-BIZ_NAME = "dim_test"
+# Unique biz name per session to avoid state leaks from previous runs
+BIZ_NAME = f"dim_test_{int(time.time())}"
 
 
 def test_health():

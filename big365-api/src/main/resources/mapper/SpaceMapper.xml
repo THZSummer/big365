@@ -28,7 +28,7 @@
          coordValuesStr: pre-built value list like "3, 7" -->
     <insert id="insertOrUpdate">
         INSERT INTO `${tableName}` (${coordColumnsStr}, `${dateColumn}`)
-        VALUES (${coordValuesStr})
+        VALUES (${coordValuesStr}, #{value})
         ON DUPLICATE KEY UPDATE `${dateColumn}` = `${dateColumn}` + #{value}
     </insert>
 

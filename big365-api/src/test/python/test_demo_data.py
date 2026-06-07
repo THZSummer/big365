@@ -1,4 +1,3 @@
-from conftest import BASE_URL
 """
 Integration test for Demo Data Generation API.
 
@@ -6,17 +5,19 @@ Tests asynchronous demo data generation: create job → poll status → verify c
 
 Prerequisites:
     - big365-api service running
-    - A test biz "demo_test" registered (setup via API)
+    - A test biz is registered via setup_module()
 """
+from conftest import BASE_URL, DEMO_BIZ_NAME
 import requests
 import time
 
+BIZ = DEMO_BIZ_NAME
 
 
 def setup_module():
     """Register test biz if not already exists."""
     r = requests.post(f"{BASE_URL}/biz/register", json={
-        "bizName": "demo_test",
+        "bizName": BIZ,
         "bizLabel": "演示测试",
         "dimensions": [
             {"columnName": "a", "displayName": "应用", "leafMin": 1, "leafMax": 5},
@@ -24,7 +25,6 @@ def setup_module():
         ],
         "dateRange": {"from": "20260101", "to": "20260105"}
     })
-    # OK if service not running (skip tests) or biz already exists
     if r.status_code != 200:
         data = r.json()
         if data.get("code") != "BIZ_ALREADY_EXISTS":
@@ -33,7 +33,7 @@ def setup_module():
 
 def _create_job(scale="small", date_from="20260101", date_to="20260103"):
     """Helper: create a demo job and return the job ID."""
-    r = requests.post(f"{BASE_URL}/demo_test/demo-data/jobs", json={
+    r = requests.post(f"{BASE_URL}/{BIZ}/demo-data/jobs", json={
         "scale": scale,
         "dateRange": {"from": date_from, "to": date_to}
     })
@@ -47,7 +47,7 @@ def _create_job(scale="small", date_from="20260101", date_to="20260103"):
 def _poll_job(job_id, max_wait=120):
     """Helper: poll job status until completed or failed, return final JSON data."""
     while max_wait > 0:
-        r = requests.get(f"{BASE_URL}/demo_test/demo-data/jobs/{job_id}")
+        r = requests.get(f"{BASE_URL}/{BIZ}/demo-data/jobs/{job_id}")
         assert r.status_code == 200, f"Poll job failed: {r.text}"
         data = r.json()
         assert data["success"] is True, f"Poll job unsuccessful: {data}"
@@ -78,7 +78,7 @@ def test_create_small_job_and_poll():
 
 def test_job_not_found():
     """Querying a nonexistent job should return DEMO_JOB_NOT_FOUND."""
-    r = requests.get(f"{BASE_URL}/demo_test/demo-data/jobs/nonexistent-job-id")
+    r = requests.get(f"{BASE_URL}/{BIZ}/demo-data/jobs/nonexistent-job-id")
     assert r.status_code == 400, f"Expected 400, got {r.status_code}"
     data = r.json()
     assert data["success"] is False
@@ -99,7 +99,7 @@ def test_job_biz_not_found():
 
 def test_invalid_scale():
     """Creating a job with invalid scale should return VALIDATION_ERROR."""
-    r = requests.post(f"{BASE_URL}/demo_test/demo-data/jobs", json={
+    r = requests.post(f"{BASE_URL}/{BIZ}/demo-data/jobs", json={
         "scale": "huge",
         "dateRange": {"from": "20260101", "to": "20260103"}
     })
@@ -117,7 +117,7 @@ def test_medium_job_progress_updates():
     last_progress = -1
     waited = 0
     while waited < 60:
-        r = requests.get(f"{BASE_URL}/demo_test/demo-data/jobs/{job_id}")
+        r = requests.get(f"{BASE_URL}/{BIZ}/demo-data/jobs/{job_id}")
         data = r.json()
         status = data["data"]["status"]
         progress = data["data"]["progress"]
@@ -158,7 +158,7 @@ def test_generated_data_is_queryable():
     assert data["data"]["status"] == "completed"
 
     # Query Grand Total for the first generated date
-    r = requests.get(f"{BASE_URL}/demo_test/space/query", params={
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "a": 0, "b": 0, "date": "20260104"
     })
     assert r.status_code == 200, f"Space query failed: {r.text}"

@@ -1,4 +1,3 @@
-from conftest import BASE_URL
 """
 Integration test for Space Query API.
 
@@ -7,16 +6,18 @@ Relies on data written by test_space_write.py or previously existing data.
 
 Prerequisites:
     - big365-api service running
-    - "space_test" biz registered with dimensions a(1-10) and b(1-100)
+    - Test biz registered by test_space_write.py (same SPACE_BIZ_NAME)
     - Some data has been written to the space
 """
+from conftest import BASE_URL, SPACE_BIZ_NAME
 import requests
 
+BIZ = SPACE_BIZ_NAME
 
 
 def test_grand_total_query():
     """Grand Total query (all coordinates = 0) should return a non-negative value."""
-    r = requests.get(f"{BASE_URL}/space_test/space/query", params={
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "a": 0, "b": 0, "date": "20260101"
     })
     assert r.status_code == 200, f"Query failed: {r.text}"
@@ -31,14 +32,14 @@ def test_grand_total_query():
 def test_drill_down():
     """Drill-down query result should be <= Grand Total."""
     # Grand Total
-    r = requests.get(f"{BASE_URL}/space_test/space/query", params={
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "a": 0, "b": 0, "date": "20260101"
     })
     assert r.status_code == 200
     grand = r.json()["data"]["value"]
 
     # Drill down: a=3, b=0 (rollup on b)
-    r = requests.get(f"{BASE_URL}/space_test/space/query", params={
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "a": 3, "b": 0, "date": "20260101"
     })
     assert r.status_code == 200
@@ -49,7 +50,7 @@ def test_drill_down():
 
 def test_leaf_query():
     """Leaf-level query should return a value."""
-    r = requests.get(f"{BASE_URL}/space_test/space/query", params={
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "a": 3, "b": 7, "date": "20260101"
     })
     assert r.status_code == 200
@@ -61,7 +62,7 @@ def test_leaf_query():
 
 def test_query_nonexistent_cell():
     """Querying an unwritten coordinate should return 0 (not error)."""
-    r = requests.get(f"{BASE_URL}/space_test/space/query", params={
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "a": 9, "b": 99, "date": "20260101"
     })
     assert r.status_code == 200
@@ -72,8 +73,8 @@ def test_query_nonexistent_cell():
 
 
 def test_query_missing_date():
-    """Query without date parameter should still work (or return error)."""
-    r = requests.get(f"{BASE_URL}/space_test/space/query", params={
+    """Query without date parameter should return validation error."""
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "a": 0, "b": 0
     })
     # May return 200 with null date or 400 validation error
@@ -91,7 +92,7 @@ def test_query_invalid_biz():
 
 def test_query_invalid_dimension():
     """Query with unknown dimension name should fail."""
-    r = requests.get(f"{BASE_URL}/space_test/space/query", params={
+    r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
         "unknown_dim": 0, "date": "20260101"
     })
     assert r.status_code == 400
