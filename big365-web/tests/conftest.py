@@ -63,8 +63,6 @@ def _register_test_biz():
 @pytest.fixture(scope="session")
 def browser():
     with sync_playwright() as p:
-        # Use system chromium (installed via snap) since Playwright 1.60
-        # does not support automatic browser install on Ubuntu 26.04
         browser = p.chromium.launch(
             headless=True,
             executable_path="/snap/bin/chromium",
@@ -91,6 +89,33 @@ def biz_name():
     return TEST_BIZ
 
 
+# ── Auto-screenshot on every test (pass or fail) ──────────────────────
+
+
+@pytest.fixture(autouse=True)
+def auto_screenshot(request, page):
+    """Take a screenshot after every test, tagged with pass/fail."""
+    yield
+    # Determine test result from the report
+    outcome = "UNKNOWN"
+    report = getattr(request.node, "_big365_report", None)
+    if report is not None:
+        outcome = "PASS" if report.passed else "FAIL"
+    else:
+        outcome = "DONE"
+
+    safe_name = request.node.name.replace("/", "_").replace("[", "_").replace("]", "_")
+    # Include the test module name to avoid collisions (e.g. two test_empty_state)
+    module_name = request.node.parent.name.replace(".py", "")
+    filename = f"{outcome}_{module_name}_{safe_name}.png"
+    path = SCREENSHOT_DIR / filename
+    try:
+        page.screenshot(path=str(path), full_page=False)
+        logger.info(f"  Screenshot: {path}")
+    except Exception as e:
+        logger.warning(f"  Screenshot failed: {e}")
+
+
 # ── pytest hooks ─────────────────────────────────────────────────────
 
 
@@ -98,19 +123,13 @@ def biz_name():
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
-    if report.when == "call" and report.failed:
-        logger.error(f"FAILED: {item.nodeid}")
-        if call.excinfo:
-            logger.error(f"  Exception: {call.excinfo.value}")
-        # Capture screenshot on failure
-        page = item.funcargs.get("page")
-        if page:
-            try:
-                path = SCREENSHOT_DIR / f"{item.name}.png"
-                page.screenshot(path=str(path))
-                logger.info(f"  Screenshot saved: {path}")
-            except Exception as e:
-                logger.warning(f"  Screenshot failed: {e}")
+    # Attach the call-phase report to the item for auto_screenshot to read
+    if report.when == "call":
+        item._big365_report = report
+        if report.failed:
+            logger.error(f"FAILED: {item.nodeid}")
+            if call.excinfo:
+                logger.error(f"  Exception: {call.excinfo.value}")
 
 
 def pytest_configure(config):
