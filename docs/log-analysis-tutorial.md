@@ -11,7 +11,7 @@
 首先注册一个名为 `log_monitor` 的日志监控业务，包含 3 个维度：
 
 ```bash
-curl -X POST http://localhost:8080/api/biz/register \
+curl -X POST http://localhost:18080/api/biz/register \
   -H 'Content-Type: application/json' \
   -d '{
     "bizName": "log_monitor",
@@ -52,7 +52,7 @@ curl -X POST http://localhost:8080/api/biz/register \
 ## 步骤 2：查看已注册业务
 
 ```bash
-curl http://localhost:8080/api/biz/list
+curl http://localhost:18080/api/biz/list
 ```
 
 **响应示例：**
@@ -85,7 +85,7 @@ curl http://localhost:8080/api/biz/list
 ### 3.1 查看维度列表
 
 ```bash
-curl http://localhost:8080/api/log_monitor/dimensions
+curl http://localhost:18080/api/log_monitor/dimensions
 ```
 
 可以看到注册时定义的 3 个维度（app、endpoint、status_code）。
@@ -95,7 +95,7 @@ curl http://localhost:8080/api/log_monitor/dimensions
 为 `log_monitor` 业务新增一个"环境"维度：
 
 ```bash
-curl -X POST http://localhost:8080/api/log_monitor/dimensions \
+curl -X POST http://localhost:18080/api/log_monitor/dimensions \
   -H 'Content-Type: application/json' \
   -d '{
     "columnName": "d",
@@ -113,7 +113,7 @@ curl -X POST http://localhost:8080/api/log_monitor/dimensions \
 现在向数据空间写入一条业务记录。假设我们记录 `app=3`、`endpoint=7`、`status_code=200` 在 2026-01-01 的请求量为 500：
 
 ```bash
-curl -X POST http://localhost:8080/api/log_monitor/space/write \
+curl -X POST http://localhost:18080/api/log_monitor/space/write \
   -H 'Content-Type: application/json' \
   -d '{
     "coordinates": {"a": 3, "b": 7, "c": 200},
@@ -158,7 +158,7 @@ curl -X POST http://localhost:8080/api/log_monitor/space/write \
 查询所有维度的全局总计：
 
 ```bash
-curl "http://localhost:8080/api/log_monitor/space/query?a=0&b=0&c=0&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=0&b=0&c=0&date=20260101"
 ```
 
 **响应：**
@@ -180,7 +180,7 @@ curl "http://localhost:8080/api/log_monitor/space/query?a=0&b=0&c=0&date=2026010
 只看 `app=3` 的所有数据：
 
 ```bash
-curl "http://localhost:8080/api/log_monitor/space/query?a=3&b=0&c=0&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=3&b=0&c=0&date=20260101"
 ```
 
 **响应：** `value=500`（因为只写入了这 1 条数据，所以与 Grand Total 相同）。
@@ -190,7 +190,7 @@ curl "http://localhost:8080/api/log_monitor/space/query?a=3&b=0&c=0&date=2026010
 精确查询 `app=3, endpoint=7, status=200`：
 
 ```bash
-curl "http://localhost:8080/api/log_monitor/space/query?a=3&b=7&c=200&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=3&b=7&c=200&date=20260101"
 ```
 
 **响应：** `value=500`。
@@ -201,7 +201,7 @@ curl "http://localhost:8080/api/log_monitor/space/query?a=3&b=7&c=200&date=20260
 
 ```bash
 # 写入相同坐标，但 value=300
-curl -X POST http://localhost:8080/api/log_monitor/space/write \
+curl -X POST http://localhost:18080/api/log_monitor/space/write \
   -H 'Content-Type: application/json' \
   -d '{"coordinates": {"a": 3, "b": 7, "c": 200}, "date": "20260101", "value": 300}'
 ```
@@ -209,7 +209,7 @@ curl -X POST http://localhost:8080/api/log_monitor/space/write \
 再次查询 Grand Total：
 
 ```bash
-curl "http://localhost:8080/api/log_monitor/space/query?a=0&b=0&c=0&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=0&b=0&c=0&date=20260101"
 ```
 
 **响应：** `value=800`（500 + 300，累加成功！）
@@ -223,7 +223,7 @@ big365 支持批量生成随机演示数据，用于快速验证功能。
 ### 6.1 创建演示数据生成任务
 
 ```bash
-curl -X POST http://localhost:8080/api/log_monitor/demo-data/jobs \
+curl -X POST http://localhost:18080/api/log_monitor/demo-data/jobs \
   -H 'Content-Type: application/json' \
   -d '{
     "scale": "small",
@@ -260,7 +260,7 @@ curl -X POST http://localhost:8080/api/log_monitor/demo-data/jobs \
 
 ```bash
 # 替换 YOUR_JOB_ID 为实际的 jobId
-curl http://localhost:8080/api/log_monitor/demo-data/jobs/YOUR_JOB_ID
+curl http://localhost:18080/api/log_monitor/demo-data/jobs/YOUR_JOB_ID
 ```
 
 **进度中的响应：**
@@ -302,7 +302,7 @@ curl http://localhost:8080/api/log_monitor/demo-data/jobs/YOUR_JOB_ID
 生成完成后，查询 Grand Total 验证数据已写入：
 
 ```bash
-curl "http://localhost:8080/api/log_monitor/space/query?a=0&b=0&c=0&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=0&b=0&c=0&date=20260101"
 ```
 
 现在应该能看到一个比之前大得多的累计值。
@@ -314,7 +314,7 @@ curl "http://localhost:8080/api/log_monitor/space/query?a=0&b=0&c=0&date=2026010
 打开浏览器访问：
 
 ```
-http://localhost:3000
+http://localhost:13000
 ```
 
 在前端可以直观地：

@@ -2,7 +2,7 @@ import os
 import pytest
 from playwright.sync_api import sync_playwright
 
-BASE_URL = os.environ.get("WEB_URL", "http://localhost:3000")
+BASE_URL = os.environ.get("WEB_URL", "http://localhost:13000")
 
 
 @pytest.fixture(scope="session")

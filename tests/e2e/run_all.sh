@@ -3,8 +3,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-API_URL="${API_URL:-http://localhost:8080}"
-WEB_URL="${WEB_URL:-http://localhost:3000}"
+API_URL="${API_URL:-http://localhost:18080}"
+WEB_URL="${WEB_URL:-http://localhost:13000}"
 
 echo "=========================================="
 echo "  big365 End-to-End Validation"

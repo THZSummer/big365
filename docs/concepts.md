@@ -122,17 +122,17 @@ big365 的设计核心思想是 **"计算前置"**：
 
 ```bash
 # Grand Total（全局总计）
-curl "http://localhost:8080/api/log_monitor/space/query?a=0&b=0&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=0&b=0&date=20260101"
 # 返回: value=100
 # 内部: SELECT `20260101` FROM space_t WHERE a=0 AND b=0  → 1 行
 
 # 下钻: 只看 a=3 的所有数据
-curl "http://localhost:8080/api/log_monitor/space/query?a=3&b=0&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=3&b=0&date=20260101"
 # 返回: value=100
 # 内部: SELECT `20260101` FROM space_t WHERE a=3 AND b=0  → 1 行
 
 # 叶子级: 精确到 a=3, b=7
-curl "http://localhost:8080/api/log_monitor/space/query?a=3&b=7&date=20260101"
+curl "http://localhost:18080/api/log_monitor/space/query?a=3&b=7&date=20260101"
 # 返回: value=100
 # 内部: SELECT `20260101` FROM space_t WHERE a=3 AND b=7  → 1 行
 ```

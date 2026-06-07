@@ -1,7 +1,7 @@
 import os
 import pytest
 
-BASE_URL = os.environ.get("BIG365_API_URL", "http://localhost:8080/api")
+BASE_URL = os.environ.get("BIG365_API_URL", "http://localhost:18080/api")
 
 
 @pytest.fixture(scope="session")

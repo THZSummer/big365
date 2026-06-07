@@ -7,7 +7,7 @@ big365 提供 REST API 作为首要接入方式。所有接口均可通过 HTTP 
 启动后端服务后，可以访问交互式 API 文档：
 
 ```
-http://localhost:8080/swagger-ui.html
+http://localhost:18080/swagger-ui.html
 ```
 
 Swagger UI 支持在线测试所有接口。

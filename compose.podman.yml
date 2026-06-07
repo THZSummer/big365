@@ -2,12 +2,5 @@
 # Usage: podman-compose -f compose.yml -f compose.podman.yml up -d
 version: '3.8'
 
-services:
-  mysql:
-    # Podman 兼容性调整
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD:-big365123}"]
-
-  backend:
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/api/health"]
+# Podman 与 Docker Compose 行为基本一致，无需额外覆盖。
+# 健康检查已在 compose.yml 中用 CMD-SHELL 格式，兼容两者。

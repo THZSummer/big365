@@ -1,3 +1,4 @@
+from conftest import BASE_URL
 """
 Integration test for Demo Data Generation API.
 
@@ -9,9 +10,7 @@ Prerequisites:
 """
 import requests
 import time
-import os
 
-BASE_URL = os.environ.get("BIG365_API_URL", "http://localhost:8080/api")
 
 
 def setup_module():

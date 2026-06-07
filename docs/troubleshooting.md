@@ -72,7 +72,7 @@ docker-compose -f compose.yml exec mysql mysqladmin ping -h localhost -u root -p
 
 ```bash
 # 进入后端容器检查
-docker-compose -f compose.yml exec backend sh -c "wget -q -O- http://localhost:8080/api/health"
+docker-compose -f compose.yml exec backend sh -c "wget -q -O- http://localhost:18080/api/health"
 ```
 
 **4. 确认 .env 配置正确**
@@ -162,7 +162,7 @@ location = "docker.m.daocloud.io"
 
 ```bash
 # 查询任务状态
-curl http://localhost:8080/api/{biz}/demo-data/jobs/{jobId}
+curl http://localhost:18080/api/{biz}/demo-data/jobs/{jobId}
 ```
 
 检查 `status` 和 `progress` 字段：
@@ -182,14 +182,14 @@ curl http://localhost:8080/api/{biz}/demo-data/jobs/{jobId}
 
 ### 症状
 
-浏览器打开 `http://localhost:3000`，页面显示"后端不可用"或 API 请求全部失败。
+浏览器打开 `http://localhost:13000`，页面显示"后端不可用"或 API 请求全部失败。
 
 ### 排查
 
 **1. 检查后端健康状态**
 
 ```bash
-curl http://localhost:8080/api/health
+curl http://localhost:18080/api/health
 ```
 
 如果返回 503 或连接拒绝，说明后端尚未就绪。
@@ -216,7 +216,7 @@ mysql → backend → frontend
 server: {
   proxy: {
     '/api': {
-      target: 'http://localhost:8080',
+      target: 'http://localhost:18080',
       changeOrigin: true,
     },
   },
@@ -224,7 +224,7 @@ server: {
 ```
 
 确保：
-- 后端确实运行在 `http://localhost:8080`
+- 后端确实运行在 `http://localhost:18080`
 - 没有其他服务占用 8080 端口
 
 ### 解决方案
@@ -355,8 +355,8 @@ npx tsc --noEmit
 ```bash
 # 一键检查所有服务状态
 echo "=== MySQL ===" && docker-compose -f compose.yml ps mysql
-echo "=== Backend ===" && curl -s http://localhost:8080/api/health | head -c 200
-echo "=== Frontend ===" && curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+echo "=== Backend ===" && curl -s http://localhost:18080/api/health | head -c 200
+echo "=== Frontend ===" && curl -s -o /dev/null -w "%{http_code}" http://localhost:13000
 
 # 查看后端日志
 docker-compose -f compose.yml logs --tail=50 backend

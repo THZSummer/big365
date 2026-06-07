@@ -21,4 +21,6 @@ logs/
 
 # PID
 .pid
+
+__pycache__/
 __pycache__/

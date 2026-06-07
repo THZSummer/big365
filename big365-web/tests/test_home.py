@@ -1,8 +1,7 @@
-import os
+from conftest import BASE_URL
 import pytest
 from playwright.sync_api import expect
 
-BASE_URL = os.environ.get("WEB_URL", "http://localhost:3000")
 
 
 def test_home_page_loads(page):

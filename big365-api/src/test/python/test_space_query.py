@@ -1,3 +1,4 @@
+from conftest import BASE_URL
 """
 Integration test for Space Query API.
 
@@ -10,9 +11,7 @@ Prerequisites:
     - Some data has been written to the space
 """
 import requests
-import os
 
-BASE_URL = os.environ.get("BIG365_API_URL", "http://localhost:8080/api")
 
 
 def test_grand_total_query():
