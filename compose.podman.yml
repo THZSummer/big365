@@ -1,0 +1,13 @@
+# Podman Compose override
+# Usage: podman-compose -f compose.yml -f compose.podman.yml up -d
+version: '3.8'
+
+services:
+  mysql:
+    # Podman 兼容性调整
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD:-big365123}"]
+
+  backend:
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/api/health"]

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.big365.api.biz.BizRegistryMapper">
+
+    <!-- Count biz by name -->
+    <select id="countByBizName" resultType="int">
+        SELECT COUNT(*) FROM `big365_biz_registry_t`
+        WHERE `biz_name` = #{bizName}
+    </select>
+
+    <!-- Insert biz registry record -->
+    <insert id="insert">
+        INSERT INTO `big365_biz_registry_t`
+            (`biz_name`, `biz_label`, `dimension_count`, `date_from`, `date_to`, `status`, `created_at`)
+        VALUES
+            (#{bizName}, #{bizLabel}, #{dimensionCount}, #{dateFrom}, #{dateTo}, #{status}, #{createdAt})
+    </insert>
+
+    <!-- List all businesses -->
+    <select id="listAll" resultType="org.big365.api.dto.BizInfo">
+        SELECT
+            `biz_name`     AS bizName,
+            `biz_label`    AS bizLabel,
+            `dimension_count` AS dimensionCount,
+            `date_from`    AS dateFrom,
+            `date_to`      AS dateTo,
+            `status`,
+            `created_at`   AS createdAt
+        FROM `big365_biz_registry_t`
+        ORDER BY `created_at` DESC
+    </select>
+
+    <!-- Insert dimension definition into biz-specific table -->
+    <insert id="insertDimension">
+        INSERT INTO `${tableName}`
+            (`column_name`, `display_name`, `description`, `leaf_min`, `leaf_max`, `sort_order`)
+        VALUES
+            (#{columnName}, #{displayName}, #{description}, #{leafMin}, #{leafMax}, #{sortOrder})
+    </insert>
+
+</mapper>

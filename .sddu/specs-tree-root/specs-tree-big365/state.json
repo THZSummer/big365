@@ -1,0 +1,30 @@
+{
+  "feature": "big365",
+  "identifier": "FR-BIG365-MVP",
+  "status": "built",
+  "completedAt": "2026-06-06T17:30:00Z",
+  "tasks": {
+    "TASK-001": { "name": "历史资产归档", "status": "completed", "wave": 1 },
+    "TASK-002": { "name": "big365-api 工程骨架", "status": "completed", "wave": 1 },
+    "TASK-003": { "name": "big365-web 工程骨架", "status": "completed", "wave": 1 },
+    "TASK-004": { "name": "后端通用基础设施", "status": "completed", "wave": 2 },
+    "TASK-005": { "name": "根级部署与入口文件", "status": "completed", "wave": 2 },
+    "TASK-006": { "name": "前端基础框架", "status": "completed", "wave": 2 },
+    "TASK-007": { "name": "业务注册 API", "status": "completed", "wave": 3 },
+    "TASK-008": { "name": "维度 CRUD API + 测试", "status": "completed", "wave": 4 },
+    "TASK-009": { "name": "Space 写入查询 API + 测试", "status": "completed", "wave": 4 },
+    "TASK-010": { "name": "前端业务管理与首页", "status": "completed", "wave": 4 },
+    "TASK-011": { "name": "演示数据生成 API + 测试", "status": "completed", "wave": 5 },
+    "TASK-012": { "name": "前端维度/空间/演示/文档页面", "status": "completed", "wave": 5 },
+    "TASK-013": { "name": "文档体系", "status": "completed", "wave": 6 },
+    "TASK-014": { "name": "Compose 闭环与 E2E 验证", "status": "completed", "wave": 6 }
+  },
+  "stats": {
+    "apiSources": 44,
+    "mapperXmls": 4,
+    "frontendSources": 19,
+    "docs": 5,
+    "testFiles": 6,
+    "totalFiles": 100
+  }
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.big365.api.space.SpaceMapper">
+
+    <!-- List all enabled dimensions for a biz, ordered by sort_order -->
+    <select id="listDimensions" resultType="java.util.LinkedHashMap">
+        SELECT `column_name`, `display_name`, `leaf_min`, `leaf_max`
+        FROM `${tableName}`
+        WHERE `enabled` = 1
+        ORDER BY `sort_order`
+    </select>
+
+    <!-- Query a single cell value from space table by exact coordinate match -->
+    <select id="queryCell" resultType="java.util.LinkedHashMap">
+        SELECT `${dateColumn}` AS `value`
+        FROM `${tableName}`
+        <where>
+            <foreach collection="conditions" item="cond">
+                AND `${cond.col}` = #{cond.val}
+            </foreach>
+        </where>
+        LIMIT 1
+    </select>
+
+    <!-- Write a single row: INSERT ... ON DUPLICATE KEY UPDATE -->
+    <!-- coordColumnsStr: pre-built column list like "`a`, `b`"
+         coordValuesStr: pre-built value list like "3, 7" -->
+    <insert id="insertOrUpdate">
+        INSERT INTO `${tableName}` (${coordColumnsStr}, `${dateColumn}`)
+        VALUES (${coordValuesStr})
+        ON DUPLICATE KEY UPDATE `${dateColumn}` = `${dateColumn}` + #{value}
+    </insert>
+
+</mapper>

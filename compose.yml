@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: big365-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-big365123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-big365}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-big365123}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - big365-net
+
+  backend:
+    build:
+      context: ./big365-api
+      dockerfile: Dockerfile
+    container_name: big365-backend
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-big365}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-big365123}
+      BACKEND_PORT: 8080
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - big365-net
+
+  frontend:
+    build:
+      context: ./big365-web
+      dockerfile: Dockerfile
+    container_name: big365-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - big365-net
+
+volumes:
+  mysql-data:
+    driver: local
+
+networks:
+  big365-net:
+    driver: bridge

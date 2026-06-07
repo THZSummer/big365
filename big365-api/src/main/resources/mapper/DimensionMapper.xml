@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.big365.api.dimension.DimensionMapper">
+
+    <resultMap id="DimensionResult" type="org.big365.api.dimension.Dimension">
+        <id property="id" column="id"/>
+        <result property="columnName" column="column_name"/>
+        <result property="displayName" column="display_name"/>
+        <result property="description" column="description"/>
+        <result property="leafMin" column="leaf_min"/>
+        <result property="leafMax" column="leaf_max"/>
+        <result property="enabled" column="enabled"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- Find dimension by id -->
+    <select id="findById" resultMap="DimensionResult">
+        SELECT * FROM `${tableName}`
+        WHERE `id` = #{id}
+    </select>
+
+    <!-- Count by column name (uniqueness check) -->
+    <select id="countByColumnName" resultType="int">
+        SELECT COUNT(*) FROM `${tableName}`
+        WHERE `column_name` = #{columnName}
+    </select>
+
+    <!-- Insert dimension -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="dim.id">
+        INSERT INTO `${tableName}`
+            (`column_name`, `display_name`, `description`, `leaf_min`, `leaf_max`, `sort_order`)
+        VALUES
+            (#{dim.columnName}, #{dim.displayName}, #{dim.description},
+             #{dim.leafMin}, #{dim.leafMax}, #{dim.sortOrder})
+    </insert>
+
+    <!-- Update dimension (display_name, description, enabled) -->
+    <update id="update">
+        UPDATE `${tableName}`
+        <set>
+            <if test="dim.displayName != null">`display_name` = #{dim.displayName},</if>
+            <if test="dim.description != null">`description` = #{dim.description},</if>
+            <if test="dim.enabled != null">`enabled` = #{dim.enabled},</if>
+        </set>
+        WHERE `id` = #{dim.id}
+    </update>
+
+    <!-- Disable dimension (soft delete) -->
+    <update id="disable">
+        UPDATE `${tableName}`
+        SET `enabled` = 0
+        WHERE `id` = #{id}
+    </update>
+
+    <!-- List dimensions by biz with pagination -->
+    <select id="listByBizName" resultMap="DimensionResult">
+        SELECT * FROM `${tableName}`
+        ORDER BY `sort_order` ASC, `id` ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- Count total dimensions for a biz -->
+    <select id="countByBizName" resultType="long">
+        SELECT COUNT(*) FROM `${tableName}`
+    </select>
+
+</mapper>
