@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 @Data
@@ -23,6 +24,7 @@ public class BizRegisterRequest {
     private String bizLabel;
 
     @NotEmpty(message = "至少需要一个维度")
+    @Valid
     private List<DimensionDef> dimensions;
 
     @NotNull(message = "日期范围不可为空")

@@ -73,7 +73,7 @@ function DemoDataPage() {
     setError(null);
     createDemoJob(bizName, {
       scale,
-      date_range: { from: dateFrom, to: dateTo },
+      dateRange: { from: dateFrom, to: dateTo },
     })
       .then((res) => {
         const newJob: DemoJobInfo = {

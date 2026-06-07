@@ -36,6 +36,10 @@ public class BizService {
         if (request.getDimensions().isEmpty()) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "至少需要 1 个维度");
         }
+        if (request.getDimensions().size() > 10) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR,
+                    "维度数不能超过 10 个，当前: " + request.getDimensions().size());
+        }
 
         // Validate date range
         validateDateRange(request.getDateRange().getFrom(), request.getDateRange().getTo());

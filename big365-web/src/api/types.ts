@@ -37,15 +37,15 @@ export interface DateRange {
 }
 
 export interface BizRegisterRequest {
-  biz_name: string;
-  biz_label: string;
+  bizName: string;
+  bizLabel: string;
   dimensions: DimensionDef[];
-  date_range: DateRange;
+  dateRange: DateRange;
 }
 
 export interface BizRegisterResponse {
-  biz_name: string;
-  tables_created: string[];
+  bizName: string;
+  tablesCreated: string[];
 }
 
 // Dimension types
@@ -90,7 +90,7 @@ export interface SpaceWriteRequest {
 }
 
 export interface SpaceWriteResponse {
-  rows_affected: number;
+  rowsAffected: number;
 }
 
 export interface SpaceQueryResponse {
@@ -113,5 +113,5 @@ export interface DemoJobInfo {
 
 export interface CreateDemoJobRequest {
   scale: 'small' | 'medium' | 'large';
-  date_range: DateRange;
+  dateRange: DateRange;
 }

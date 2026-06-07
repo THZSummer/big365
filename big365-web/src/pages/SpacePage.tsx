@@ -97,7 +97,7 @@ function SpacePage() {
     };
     writeSpace(bizName, data)
       .then((res) => {
-        const affected = res.data?.rows_affected || 0;
+        const affected = res.data?.rowsAffected || 0;
         setWriteResult(affected);
         showToast(`写入成功，影响 ${affected} 行`, 'success');
       })

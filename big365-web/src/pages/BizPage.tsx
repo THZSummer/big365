@@ -12,8 +12,8 @@ function BizPage() {
   const [showModal, setShowModal] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    biz_name: '',
-    biz_label: '',
+    bizName: '',
+    bizLabel: '',
     dimensions: [{ columnName: '', displayName: '', leafMin: 1, leafMax: 10 }],
     dateRangeFrom: '20260101',
     dateRangeTo: '20260107',
@@ -35,18 +35,18 @@ function BizPage() {
   const handleRegister = () => {
     setRegError(null);
     const request: BizRegisterRequest = {
-      biz_name: form.biz_name,
-      biz_label: form.biz_label,
+      bizName: form.bizName,
+      bizLabel: form.bizLabel,
       dimensions: form.dimensions.map((d) => ({
         columnName: d.columnName,
         displayName: d.displayName,
         leafMin: d.leafMin,
         leafMax: d.leafMax,
       })),
-      date_range: { from: form.dateRangeFrom, to: form.dateRangeTo },
+      dateRange: { from: form.dateRangeFrom, to: form.dateRangeTo },
     };
 
-    client.post<any, ApiResponse<{ tables_created: string[] }>>('/biz/register', request)
+    client.post<any, ApiResponse<{ tablesCreated: string[] }>>('/biz/register', request)
       .then(() => {
         setShowModal(false);
         fetchBizList();
@@ -114,14 +114,14 @@ function BizPage() {
             {regError && <ErrorBanner message={regError} />}
 
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>业务名称 (biz_name)</label>
-              <input value={form.biz_name} onChange={(e) => setForm({ ...form, biz_name: e.target.value })}
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>业务名称 (bizName)</label>
+              <input value={form.bizName} onChange={(e) => setForm({ ...form, bizName: e.target.value })}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd' }}
                 placeholder="例: log_monitor" />
             </div>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>业务描述 (biz_label)</label>
-              <input value={form.biz_label} onChange={(e) => setForm({ ...form, biz_label: e.target.value })}
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>业务描述 (bizLabel)</label>
+              <input value={form.bizLabel} onChange={(e) => setForm({ ...form, bizLabel: e.target.value })}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd' }}
                 placeholder="例: 日志监控" />
             </div>
