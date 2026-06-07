@@ -1,11 +1,13 @@
 import os
 import time
+import base64
 import logging
 import pytest
 import requests
 from pathlib import Path
 from datetime import datetime
 from playwright.sync_api import sync_playwright
+from pytest_html import extras
 
 WEB_URL = os.environ.get("WEB_URL", "http://localhost:13000")
 API_URL = os.environ.get("BIG365_API_URL", "http://localhost:18080/api")
@@ -89,47 +91,52 @@ def biz_name():
     return TEST_BIZ
 
 
-# ── Auto-screenshot on every test (pass or fail) ──────────────────────
+# ── Auto-screenshot (embedded in HTML report + saved to filesystem) ───
 
 
 @pytest.fixture(autouse=True)
 def auto_screenshot(request, page):
-    """Take a screenshot after every test, tagged with pass/fail."""
+    """No-op fixture that holds the page reference. Screenshot is taken in the hook below."""
     yield
-    # Determine test result from the report
-    outcome = "UNKNOWN"
-    report = getattr(request.node, "_big365_report", None)
-    if report is not None:
-        outcome = "PASS" if report.passed else "FAIL"
-    else:
-        outcome = "DONE"
-
-    safe_name = request.node.name.replace("/", "_").replace("[", "_").replace("]", "_")
-    # Include the test module name to avoid collisions (e.g. two test_empty_state)
-    module_name = request.node.parent.name.replace(".py", "")
-    filename = f"{outcome}_{module_name}_{safe_name}.png"
-    path = SCREENSHOT_DIR / filename
-    try:
-        page.screenshot(path=str(path), full_page=False)
-        logger.info(f"  Screenshot: {path}")
-    except Exception as e:
-        logger.warning(f"  Screenshot failed: {e}")
 
 
 # ── pytest hooks ─────────────────────────────────────────────────────
 
 
-@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+@pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
-    # Attach the call-phase report to the item for auto_screenshot to read
     if report.when == "call":
         item._big365_report = report
         if report.failed:
             logger.error(f"FAILED: {item.nodeid}")
             if call.excinfo:
                 logger.error(f"  Exception: {call.excinfo.value}")
+
+        # Take screenshot and embed as base64 data URI in HTML report
+        page = item.funcargs.get("page")
+        if page:
+            try:
+                outcome_label = "PASS" if report.passed else "FAIL"
+                safe_name = item.name.replace("/", "_").replace("[", "_").replace("]", "_")
+                module_name = item.parent.name.replace(".py", "")
+                filename = f"{outcome_label}_{module_name}_{safe_name}.png"
+
+                png_bytes = page.screenshot(path=str(SCREENSHOT_DIR / filename), full_page=False)
+                b64 = base64.b64encode(png_bytes).decode("ascii")
+                img_tag = (
+                    f'<details><summary>📸 {filename}</summary>'
+                    f'<img src="data:image/png;base64,{b64}" alt="{filename}" '
+                    f'style="max-width:100%;border:1px solid #ddd;margin-top:4px;border-radius:4px"/>'
+                    f'</details>'
+                )
+                if not hasattr(report, "extras"):
+                    report.extras = []
+                report.extras.append(extras.html(img_tag))
+                logger.info(f"  Embedded in report: {filename}")
+            except Exception as e:
+                logger.warning(f"  Report embed failed: {e}")
 
 
 def pytest_configure(config):
