@@ -27,9 +27,108 @@
     <!-- coordColumnsStr: pre-built column list like "`a`, `b`"
          coordValuesStr: pre-built value list like "3, 7" -->
     <insert id="insertOrUpdate">
-        INSERT INTO `${tableName}` (${coordColumnsStr}, `${dateColumn}`)
-        VALUES (${coordValuesStr}, #{value})
-        ON DUPLICATE KEY UPDATE `${dateColumn}` = `${dateColumn}` + #{value}
+        INSERT INTO `${tableName}` (${coordColumnsStr}, `${dateColumn}`, `version`)
+        VALUES (${coordValuesStr}, #{value}, 1)
+        ON DUPLICATE KEY UPDATE `${dateColumn}` = `${dateColumn}` + #{value},
+                                `version` = `version` + 1
     </insert>
+
+    <!-- ===== V2: List + Delete SQL ===== -->
+
+    <!-- List space cells: exclude ALL rows (WHERE col != 0), optional dimension filters,
+         pagination (LIMIT/OFFSET), ordered by a date column value DESC.
+         coordColumns: list of coordinate column name strings.
+         dimFilters: optional list of {col, val} filter objects. -->
+    <select id="listSpaceCells" resultType="java.util.LinkedHashMap">
+        SELECT * FROM `${tableName}`
+        <where>
+            <foreach collection="coordColumns" item="col">
+                AND `${col}` != 0
+            </foreach>
+            <if test="dimFilters != null and dimFilters.size() > 0">
+                <foreach collection="dimFilters" item="filter">
+                    AND `${filter.col}` = #{filter.val}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY `${dateColumn}` DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- Count space cells with the same WHERE conditions as listSpaceCells -->
+    <select id="countSpaceCells" resultType="long">
+        SELECT COUNT(*) FROM `${tableName}`
+        <where>
+            <foreach collection="coordColumns" item="col">
+                AND `${col}` != 0
+            </foreach>
+            <if test="dimFilters != null and dimFilters.size() > 0">
+                <foreach collection="dimFilters" item="filter">
+                    AND `${filter.col}` = #{filter.val}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <!-- Zero out a specific date column for a matching coordinate combination.
+         conditions: list of {col, val} coordinate match objects.
+         dateColumn: the date column name to set to 0 (e.g. '20260601').
+         expectedVersion: optimistic lock version; SET clause increments version on match. -->
+    <update id="zeroOutColumn">
+        UPDATE `${tableName}`
+        SET `${dateColumn}` = 0,
+            `version` = `version` + 1
+        <where>
+            <foreach collection="conditions" item="cond">
+                AND `${cond.col}` = #{cond.val}
+            </foreach>
+            AND `version` = #{expectedVersion}
+        </where>
+    </update>
+
+    <!-- Delete an entire row matching all coordinate columns.
+         conditions: list of {col, val} coordinate match objects.
+         expectedVersion: optimistic lock version check. -->
+    <delete id="deleteRow">
+        DELETE FROM `${tableName}`
+        <where>
+            <foreach collection="conditions" item="cond">
+                AND `${cond.col}` = #{cond.val}
+            </foreach>
+            AND `version` = #{expectedVersion}
+        </where>
+    </delete>
+
+    <!-- Check if all date columns are zero for a given coordinate combination.
+         dateColumns: list of date column name strings.
+         conditions: list of {col, val} coordinate match objects.
+         Returns the sum of all date column values; 0 means all columns are zero. -->
+    <select id="isAllColumnsZero" resultType="long">
+        SELECT COALESCE((
+            <foreach collection="dateColumns" item="col" separator=" + ">
+                COALESCE(`${col}`, 0)
+            </foreach>
+        ), 0) AS total
+        FROM `${tableName}`
+        <where>
+            <foreach collection="conditions" item="cond">
+                AND `${cond.col}` = #{cond.val}
+            </foreach>
+        </where>
+        LIMIT 1
+    </select>
+
+    <!-- Get the current version number for a coordinate combination.
+         conditions: list of {col, val} coordinate match objects.
+         Returns null if no matching row exists. -->
+    <select id="getVersion" resultType="long">
+        SELECT `version` FROM `${tableName}`
+        <where>
+            <foreach collection="conditions" item="cond">
+                AND `${cond.col}` = #{cond.val}
+            </foreach>
+        </where>
+        LIMIT 1
+    </select>
 
 </mapper>

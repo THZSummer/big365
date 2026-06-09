@@ -68,10 +68,18 @@ public class DemoDataGenerator {
         long toEpoch = toDate.toEpochDay();
         long dayRange = toEpoch - fromEpoch + 1;
 
+        // Discrete status codes for realistic log analysis demo (FR-V2-003)
+        final int[] STATUS_CODES = {200, 404, 500};
+
         for (int i = 0; i < count; i++) {
             List<Coordinate> coordinates = new ArrayList<>(dimensions.size());
             for (DimensionConcept dim : dimensions) {
-                int val = dim.getLeafMin() + rng.nextInt(dim.getLeafMax() - dim.getLeafMin() + 1);
+                int val;
+                if ("statusCode".equals(dim.getColumnName())) {
+                    val = STATUS_CODES[rng.nextInt(STATUS_CODES.length)];
+                } else {
+                    val = dim.getLeafMin() + rng.nextInt(dim.getLeafMax() - dim.getLeafMin() + 1);
+                }
                 coordinates.add(new Coordinate(dim.getColumnName(), val));
             }
 

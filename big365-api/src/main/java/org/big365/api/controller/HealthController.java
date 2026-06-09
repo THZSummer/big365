@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.big365.api.common.ApiResponse;
+import org.big365.api.demo.DefaultDataInitializer;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,11 +24,22 @@ import java.util.Map;
 public class HealthController {
 
     private final DataSource dataSource;
+    private final DefaultDataInitializer defaultDataInitializer;
 
     @GetMapping("/health")
-    @Operation(summary = "服务健康检查", description = "检查服务和数据库连接状态")
+    @Operation(summary = "服务健康检查", description = "检查服务、数据库连接和预置数据初始化状态")
     public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
         Map<String, Object> info = new LinkedHashMap<>();
+
+        // Check if demo data initialization is complete (FR-V2-005)
+        if (!defaultDataInitializer.isInitialized()) {
+            info.put("status", "INITIALIZING");
+            info.put("service", "big365-api");
+            info.put("timestamp", System.currentTimeMillis());
+            info.put("message", "Demo data initialization not yet complete — please wait or check logs");
+            return ResponseEntity.ok(ApiResponse.ok(info));
+        }
+
         info.put("status", "UP");
         info.put("service", "big365-api");
         info.put("timestamp", System.currentTimeMillis());

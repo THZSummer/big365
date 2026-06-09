@@ -22,7 +22,6 @@ mybatis:
   type-aliases-package: org.big365.api
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 springdoc:
   swagger-ui:

@@ -1,0 +1,230 @@
+{
+  "feature": "big365-v2",
+  "identifier": "FR-BIG365-V2",
+  "status": "tasked",
+  "createdAt": "2026-06-10",
+  "totalTasks": 12,
+  "totalWaves": 5,
+  "complexity": {
+    "S": 2,
+    "M": 9,
+    "L": 1
+  },
+  "tasks": [
+    {
+      "id": "TASK-V2-001",
+      "name": "ErrorCode 新增 + DTO 新增",
+      "complexity": "S",
+      "wave": 1,
+      "dependencies": [],
+      "status": "pending",
+      "files": [
+        "big365-api/src/main/java/org/big365/api/common/ErrorCode.java",
+        "big365-api/src/main/java/org/big365/api/space/dto/SpaceListResponse.java",
+        "big365-api/src/main/java/org/big365/api/space/dto/DeleteSpaceRequest.java",
+        "big365-api/src/main/java/org/big365/api/space/dto/DeleteSpaceResponse.java"
+      ],
+      "fr": ["FR-V2-012", "FR-V2-013", "FR-V2-024", "FR-V2-030", "FR-V2-033"],
+      "verification": "mvn compile -pl big365-api"
+    },
+    {
+      "id": "TASK-V2-002",
+      "name": "SpaceMapper.xml SQL 扩展 + SpaceRepository 方法",
+      "complexity": "M",
+      "wave": 1,
+      "dependencies": [],
+      "status": "pending",
+      "files": [
+        "big365-api/src/main/resources/mapper/SpaceMapper.xml",
+        "big365-api/src/main/java/org/big365/api/space/SpaceRepository.java"
+      ],
+      "fr": ["FR-V2-021", "FR-V2-022", "FR-V2-023", "FR-V2-025", "FR-V2-031", "FR-V2-032"],
+      "verification": "mvn compile -pl big365-api"
+    },
+    {
+      "id": "TASK-V2-003",
+      "name": "DefaultDataInitializer 预置数据初始化",
+      "complexity": "M",
+      "wave": 1,
+      "dependencies": [],
+      "status": "pending",
+      "files": [
+        "big365-api/src/main/java/org/big365/api/demo/DefaultDataInitializer.java"
+      ],
+      "fr": ["FR-V2-001", "FR-V2-002", "FR-V2-003", "FR-V2-004", "FR-V2-005", "FR-V2-006"],
+      "verification": "mvn compile -pl big365-api; runtime: GET /api/biz/list contains demo_logs"
+    },
+    {
+      "id": "TASK-V2-004",
+      "name": "时间区间查询实现",
+      "complexity": "M",
+      "wave": 2,
+      "dependencies": ["TASK-V2-001", "TASK-V2-002"],
+      "status": "pending",
+      "files": [
+        "big365-api/src/main/java/org/big365/api/space/SpaceService.java",
+        "big365-api/src/main/java/org/big365/api/space/SpaceController.java",
+        "big365-api/src/main/java/org/big365/api/space/dto/SpaceQueryResponse.java"
+      ],
+      "fr": ["FR-V2-010", "FR-V2-011", "FR-V2-012", "FR-V2-013", "FR-V2-014", "FR-V2-015"],
+      "verification": "curl query with dateFrom/dateTo returns SUM + scannedDates"
+    },
+    {
+      "id": "TASK-V2-005",
+      "name": "列表端点实现",
+      "complexity": "M",
+      "wave": 2,
+      "dependencies": ["TASK-V2-004"],
+      "status": "pending",
+      "files": [
+        "big365-api/src/main/java/org/big365/api/space/SpaceService.java",
+        "big365-api/src/main/java/org/big365/api/space/SpaceController.java"
+      ],
+      "fr": ["FR-V2-020", "FR-V2-021", "FR-V2-022", "FR-V2-023", "FR-V2-024", "FR-V2-025"],
+      "verification": "GET /api/demo_logs/space/list returns paginated results without ALL rows"
+    },
+    {
+      "id": "TASK-V2-006",
+      "name": "删除端点实现",
+      "complexity": "M",
+      "wave": 2,
+      "dependencies": ["TASK-V2-005"],
+      "status": "pending",
+      "files": [
+        "big365-api/src/main/java/org/big365/api/space/SpaceService.java",
+        "big365-api/src/main/java/org/big365/api/space/SpaceController.java"
+      ],
+      "fr": ["FR-V2-030", "FR-V2-031", "FR-V2-032", "FR-V2-033", "FR-V2-034", "FR-V2-035"],
+      "verification": "DELETE endpoint blocks ALL row deletion, hard-deletes cells"
+    },
+    {
+      "id": "TASK-V2-007",
+      "name": "Java 单元测试",
+      "complexity": "L",
+      "wave": 3,
+      "dependencies": ["TASK-V2-004", "TASK-V2-005", "TASK-V2-006"],
+      "status": "pending",
+      "files": [
+        "big365-api/src/test/java/org/big365/api/space/SpaceServiceTest.java",
+        "big365-api/src/test/java/org/big365/api/dimension/DimensionServiceTest.java",
+        "big365-api/src/test/java/org/big365/api/demo/DemoDataGeneratorTest.java"
+      ],
+      "fr": ["FR-V2-040", "FR-V2-041", "FR-V2-042", "FR-V2-043", "FR-V2-044"],
+      "verification": "mvn test -pl big365-api (>=3 test classes, >=19 test cases)"
+    },
+    {
+      "id": "TASK-V2-008",
+      "name": "概念模型文档 + DocsPage 更新",
+      "complexity": "S",
+      "wave": 3,
+      "dependencies": [],
+      "status": "pending",
+      "files": [
+        "docs/why-space-model.md",
+        "docs/concepts.md",
+        "big365-web/src/pages/DocsPage.tsx"
+      ],
+      "fr": ["FR-V2-070", "FR-V2-071", "FR-V2-072", "FR-V2-082"],
+      "verification": "docs existence + npm run build"
+    },
+    {
+      "id": "TASK-V2-009",
+      "name": "前端 HomePage 预置数据直展改造",
+      "complexity": "M",
+      "wave": 3,
+      "dependencies": ["TASK-V2-004"],
+      "status": "pending",
+      "files": [
+        "big365-web/src/pages/HomePage.tsx",
+        "big365-web/src/api/space.ts",
+        "big365-web/src/api/types.ts"
+      ],
+      "fr": ["FR-V2-050", "FR-V2-051", "FR-V2-052", "FR-V2-053", "FR-V2-054"],
+      "verification": "npm run build; homepage shows demo data summary table"
+    },
+    {
+      "id": "TASK-V2-010",
+      "name": "前端 SpacePage 增强",
+      "complexity": "M",
+      "wave": 4,
+      "dependencies": ["TASK-V2-005", "TASK-V2-006", "TASK-V2-009"],
+      "status": "pending",
+      "files": [
+        "big365-web/src/pages/SpacePage.tsx",
+        "big365-web/src/components/DateRangePicker.tsx",
+        "big365-web/src/api/space.ts",
+        "big365-web/src/api/types.ts"
+      ],
+      "fr": ["FR-V2-075", "FR-V2-076"],
+      "verification": "npm run build; SpacePage has tabs, list view, delete buttons, accordion"
+    },
+    {
+      "id": "TASK-V2-011",
+      "name": "Playwright 测试补充",
+      "complexity": "M",
+      "wave": 5,
+      "dependencies": ["TASK-V2-009", "TASK-V2-010"],
+      "status": "pending",
+      "files": [
+        "big365-web/tests/test_home.py",
+        "big365-web/tests/test_space.py"
+      ],
+      "fr": ["FR-V2-060", "FR-V2-061", "FR-V2-062"],
+      "verification": "pytest big365-web/tests/ -v (all pass)"
+    },
+    {
+      "id": "TASK-V2-012",
+      "name": "Review 残留项修复",
+      "complexity": "M",
+      "wave": 5,
+      "dependencies": ["TASK-V2-004", "TASK-V2-005", "TASK-V2-006"],
+      "status": "pending",
+      "files": [
+        "big365-api/src/main/java/org/big365/api/biz/BizRepository.java",
+        "big365-api/src/main/resources/mapper/SpaceMapper.xml",
+        "big365-api/src/main/java/org/big365/api/space/SpaceRepository.java",
+        "big365-api/src/main/java/org/big365/api/space/SpaceService.java",
+        "big365-api/src/main/java/org/big365/api/common/ErrorCode.java"
+      ],
+      "fr": ["FR-V2-080", "FR-V2-081"],
+      "verification": "mvn test -pl big365-api; dimension UNIQUE constraint verified"
+    }
+  ],
+  "waves": [
+    {
+      "wave": 1,
+      "name": "后端基础设施",
+      "tasks": ["TASK-V2-001", "TASK-V2-002", "TASK-V2-003"],
+      "parallel": true,
+      "description": "ErrorCode/DTO、Mapper SQL/Repository、DefaultDataInitializer 三线并行"
+    },
+    {
+      "wave": 2,
+      "name": "后端核心逻辑",
+      "tasks": ["TASK-V2-004", "TASK-V2-005", "TASK-V2-006"],
+      "parallel": false,
+      "description": "queryRange → listCells → deleteCell 顺序执行（共享 SpaceService/Controller 文件）"
+    },
+    {
+      "wave": 3,
+      "name": "测试 + 文档 + 首页",
+      "tasks": ["TASK-V2-007", "TASK-V2-008", "TASK-V2-009"],
+      "parallel": true,
+      "description": "Java 单元测试、概念文档、HomePage 改造三线并行"
+    },
+    {
+      "wave": 4,
+      "name": "前端 SpacePage 增强",
+      "tasks": ["TASK-V2-010"],
+      "parallel": false,
+      "description": "SpacePage 需等待 HomePage 的 types.ts/space.ts 扩展完成"
+    },
+    {
+      "wave": 5,
+      "name": "测试补充 + Review 修复",
+      "tasks": ["TASK-V2-011", "TASK-V2-012"],
+      "parallel": true,
+      "description": "Playwright 测试与 Review 残留修复可并行"
+    }
+  ]
+}

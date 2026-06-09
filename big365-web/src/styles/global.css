@@ -37,3 +37,10 @@ button {
 ul, ol {
   list-style: none;
 }
+
+/* ── Shared animations ────────────────────────────────────────── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

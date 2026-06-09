@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import client from '../api/client';
-import { ApiResponse, PageResponse, BizInfo, BizRegisterRequest } from '../api/types';
+import { listBiz, registerBiz } from '../api/biz';
+import type { ApiResponse, PageResponse, BizInfo, BizRegisterRequest } from '../api/types';
 import ErrorBanner from '../components/ErrorBanner';
 import Loading from '../components/Loading';
 
@@ -21,7 +21,7 @@ function BizPage() {
 
   const fetchBizList = useCallback(() => {
     setLoading(true);
-    client.get<any, ApiResponse<PageResponse<BizInfo>>>('/biz/list')
+    listBiz()
       .then((res) => {
         setBizList(res.data?.items || []);
         setError(null);
@@ -46,7 +46,7 @@ function BizPage() {
       dateRange: { from: form.dateRangeFrom, to: form.dateRangeTo },
     };
 
-    client.post<any, ApiResponse<{ tablesCreated: string[] }>>('/biz/register', request)
+    registerBiz(request)
       .then(() => {
         setShowModal(false);
         fetchBizList();

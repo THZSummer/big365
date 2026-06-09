@@ -99,6 +99,9 @@ public class BizRepository {
             coordColumns.add(col);
         }
 
+        // Optimistic lock version column (FR-V2-081)
+        sql.append("  `version` BIGINT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',\n");
+
         // Date columns (metrics)
         for (String date : dateColumns) {
             sql.append("  `").append(date).append("` BIGINT NOT NULL DEFAULT 0 COMMENT '日期 ").append(date).append(" 指标值',\n");

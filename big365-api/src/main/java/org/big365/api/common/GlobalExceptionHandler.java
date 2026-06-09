@@ -18,7 +18,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
         log.warn("Business exception: code={}, message={}", ex.getCode(), ex.getMessage());
-        return ResponseEntity.badRequest()
+        HttpStatus status = ErrorCode.CONCURRENT_MODIFICATION.getCode().equals(ex.getCode())
+                ? HttpStatus.CONFLICT
+                : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status)
                 .body(ApiResponse.fail(ex.getCode(), ex.getMessage()));
     }
 

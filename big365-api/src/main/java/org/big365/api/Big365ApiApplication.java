@@ -5,6 +5,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -19,6 +20,7 @@ public class Big365ApiApplication {
     }
 
     @Bean
+    @Order(0)
     CommandLineRunner initDatabase(DataSource dataSource) {
         return args -> {
             try (Connection conn = dataSource.getConnection();

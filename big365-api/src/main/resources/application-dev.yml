@@ -1,0 +1,8 @@
+# Development profile: enable SQL stdout logging for debugging
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    org.big365.api: DEBUG

@@ -308,14 +308,6 @@ function DemoDataPage() {
                     </div>
                   </div>
 
-                  {/* Progress bar animation style */}
-                  <style>{`
-                    @keyframes pulse {
-                      0%, 100% { opacity: 1; }
-                      50% { opacity: 0.7; }
-                    }
-                  `}</style>
-
                   {/* Expanded Summary */}
                   {isExpanded && (
                     <div style={{

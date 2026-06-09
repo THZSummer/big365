@@ -25,6 +25,10 @@ public enum ErrorCode {
     // Space
     SPACE_CELL_NOT_FOUND("SPACE_CELL_NOT_FOUND", "数据坐标不存在"),
     QUERY_TOO_BROAD("QUERY_TOO_BROAD", "查询范围过大，请缩小筛选条件"),
+    FORBIDDEN_DELETE_ALL_ROW("FORBIDDEN_DELETE_ALL_ROW", "不能删除 ALL 汇总行。ALL 汇总行由 Space 模型自动管理。"),
+    DATE_RANGE_INVALID("DATE_RANGE_INVALID", "日期范围无效：开始日期不能晚于结束日期"),
+    DATE_RANGE_TOO_LARGE("DATE_RANGE_TOO_LARGE", "日期范围超过 365 天限制，查询可能较慢"),
+    CONCURRENT_MODIFICATION("CONCURRENT_MODIFICATION", "数据已被其他请求修改，请刷新后重试"),
 
     // Demo
     DEMO_JOB_NOT_FOUND("DEMO_JOB_NOT_FOUND", "演示数据生成任务不存在"),

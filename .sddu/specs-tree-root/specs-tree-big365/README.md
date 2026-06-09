@@ -6,7 +6,7 @@
 
 `discovery.md` 记录需求挖掘结果：big365 要成为面向中小业务的开源多维数据服务，帮助潜在用户以低复杂度、低接入成本完成多维数据建模、CRUD、组合查询和演示验证。
 
-`spec.md` 是 big365 的完整规范文档，标识符为 `FR-BIG365-MVP`，状态为 `specified`，优先级为 `P0`，创建日期为 `2026-06-06`。`spec.json` 是与规范对应的结构化数据文件，便于后续计划、任务分解和验证阶段复用。`state.json` 追踪工作流各阶段状态。
+`spec.md` 是 big365 的完整规范文档，标识符为 `FR-BIG365-MVP`，状态为 `specified`，优先级为 `P0`，创建日期为 `2026-06-06`。`spec.json` 是与规范对应的结构化数据文件，便于后续计划、任务分解和验证阶段复用。`state.json` 追踪工作流各阶段状态（当前状态：`validated`）。
 
 `plan.md` 是 big365 的技术计划，状态为 `planned`。最新计划结论是：先将历史工程资产迁移到 `backup/legacy-20260606/`，再新建两个顶层独立工程 `big365-api` 与 `big365-web`；文档、端到端测试和 Compose 作为仓库级资产管理。
 
@@ -100,7 +100,9 @@ big365 面向中小业务和开源评估用户，提供一个低复杂度、低�
 
 ### 下一步
 
-big365 已走完 SDDU 全流程（discovery → specified → planned → tasked → built → reviewed → validated）。14 个任务全部完成，103+ 文件产出，FR 覆盖率 90.2%，验证结论为有条件通过。改进建议见 `validation-report.md` 末尾（补充删除端点、Java 单元测试、前端 Playwright 测试、并发控制等），建议在后续迭代中完成。
+big365 已走完 SDDU 全流程（discovery → specified → planned → tasked → built → reviewed → validated）。14 个任务全部完成，103+ 文件产出，FR 覆盖率 90.2%，验证结论为有条件通过。改进建议见 `validation-report.md` 末尾（补充删除端点、Java 单元测试、前端 Playwright 测试、并发控制等）。
+
+> **V2 跟进**：上述改进建议中，**Java 单元测试** 已在 FR-BIG365-V2 的 TASK-V2-007 中实施（3 个 JUnit 5 测试类，52 个测试用例，覆盖 SpaceService / DimensionService / DemoDataGenerator）。其他建议（删除端点、Playwright 测试、并发控制）也在 V2 的 12 个任务中覆盖。参见 [../specs-tree-big365-v2/README.md](../specs-tree-big365-v2/README.md)。
 
 ## 子目录
 
