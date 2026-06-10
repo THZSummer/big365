@@ -174,6 +174,13 @@ public class BizRepository {
         }
     }
 
+    public BizInfo getBizInfo(String bizName) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            return session.selectOne(
+                    "org.big365.api.biz.BizRegistryMapper.getByBizName", bizName);
+        }
+    }
+
     public List<BizInfo> listAllBiz() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             return session.selectList("org.big365.api.biz.BizRegistryMapper.listAll");

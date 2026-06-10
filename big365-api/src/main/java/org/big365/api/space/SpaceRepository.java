@@ -19,7 +19,7 @@ public class SpaceRepository {
     private static final String SPACE_MAPPER = "org.big365.api.space.SpaceMapper";
 
     /** Pattern for safe SQL identifier names (alphanumeric + underscore, 1-64 chars). */
-    private static final Pattern SAFE_IDENTIFIER = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]{0,63}$");
+    private static final Pattern SAFE_IDENTIFIER = Pattern.compile("^[a-zA-Z0-9_]{1,64}$");
 
     private final SqlSessionFactory sqlSessionFactory;
 
@@ -62,15 +62,20 @@ public class SpaceRepository {
             params.put("dateColumn", date);
             params.put("conditions", conditions);
 
-            Map<String, Object> result = session.selectOne(
-                    SPACE_MAPPER + ".queryCell", params);
-            if (result == null || result.get("value") == null) {
+            try {
+                Map<String, Object> result = session.selectOne(
+                        SPACE_MAPPER + ".queryCell", params);
+                if (result == null || result.get("value") == null) {
+                    return null;
+                }
+                Object val = result.get("value");
+                if (val instanceof Long) return (Long) val;
+                if (val instanceof Number) return ((Number) val).longValue();
+                return Long.parseLong(val.toString());
+            } catch (Exception e) {
+                log.debug("queryCell failed for biz={}, date={}: {}", bizName, date, e.getMessage());
                 return null;
             }
-            Object val = result.get("value");
-            if (val instanceof Long) return (Long) val;
-            if (val instanceof Number) return ((Number) val).longValue();
-            return Long.parseLong(val.toString());
         }
     }
 
@@ -153,9 +158,22 @@ public class SpaceRepository {
         params.put("offset", offset);
 
         try (SqlSession session = sqlSessionFactory.openSession()) {
-            List<Map<String, Object>> list = session.selectList(
-                    SPACE_MAPPER + ".listSpaceCells", params);
-            long total = session.selectOne(SPACE_MAPPER + ".countSpaceCells", params);
+            List<Map<String, Object>> list;
+            long total;
+            try {
+                list = session.selectList(
+                        SPACE_MAPPER + ".listSpaceCells", params);
+                total = session.selectOne(SPACE_MAPPER + ".countSpaceCells", params);
+            } catch (Exception e) {
+                log.debug("listCells failed with dateColumn={}, falling back to id ordering: {}",
+                        dateColumn, e.getMessage());
+                // Fallback: ORDER BY id instead of missing date column
+                Map<String, Object> fallbackParams = new HashMap<>(params);
+                fallbackParams.put("dateColumn", "id");
+                list = session.selectList(
+                        SPACE_MAPPER + ".listSpaceCells", fallbackParams);
+                total = session.selectOne(SPACE_MAPPER + ".countSpaceCells", fallbackParams);
+            }
 
             Map<String, Object> result = new HashMap<>();
             result.put("list", list);

@@ -39,4 +39,20 @@
             (#{columnName}, #{displayName}, #{description}, #{leafMin}, #{leafMax}, #{sortOrder})
     </insert>
 
+
+    <!-- Get single biz by name -->
+    <select id="getByBizName" resultType="org.big365.api.dto.BizInfo">
+        SELECT
+            `biz_name`     AS bizName,
+            `biz_label`    AS bizLabel,
+            `dimension_count` AS dimensionCount,
+            `date_from`    AS dateFrom,
+            `date_to`      AS dateTo,
+            `status`,
+            `created_at`   AS createdAt
+        FROM `big365_biz_registry_t`
+        WHERE `biz_name` = #{bizName}
+        LIMIT 1
+    </select>
+
 </mapper>

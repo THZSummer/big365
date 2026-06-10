@@ -17,9 +17,10 @@ def test_docs_page_shows_four_cards(page):
     page.goto(f"{WEB_URL}/docs", wait_until="domcontentloaded")
     expect(page.get_by_text("快速开始")).to_be_visible()
     expect(page.get_by_text("概念模型")).to_be_visible()
+    expect(page.get_by_text("为什么不是普通表")).to_be_visible()
     expect(page.get_by_text("API 文档")).to_be_visible()
     expect(page.get_by_text("日志分析教程")).to_be_visible()
-    expect(page.locator("a h3")).to_have_count(4)
+    expect(page.locator("a h3")).to_have_count(5)
 
 
 def test_docs_cards_have_descriptions(page):
@@ -27,20 +28,27 @@ def test_docs_cards_have_descriptions(page):
     page.goto(f"{WEB_URL}/docs", wait_until="domcontentloaded")
     expect(page.get_by_text("从零启动 big365")).to_be_visible()
     expect(page.get_by_text("理解 Dimension / Coordinate / Vector")).to_be_visible()
+    expect(page.get_by_text("Space 预计算模型的设计动机")).to_be_visible()
     expect(page.get_by_text("REST API 接口参考")).to_be_visible()
     expect(page.get_by_text("完整端到端示例")).to_be_visible()
 
 
 def test_quick_start_renders(page):
-    """Clicking '快速开始' navigates to rendered markdown doc."""
+    """Clicking '快速开始' opens doc in new tab (V2 uses target=_blank)."""
     page.goto(f"{WEB_URL}/docs", wait_until="domcontentloaded")
-    page.get_by_text("快速开始").click()
-    page.wait_for_timeout(3000)
+
+    with page.expect_popup() as popup_info:
+        page.get_by_text("快速开始").click()
+
+    popup = popup_info.value
+    popup.wait_for_load_state("networkidle", timeout=15000)
+    popup.wait_for_timeout(3000)
 
     # After react-markdown renders, the doc content should appear
-    body = page.locator("body").inner_text()
+    body = popup.locator("body").inner_text()
     assert "前置要求" in body, f"Expected doc content, got: {body[:300]}"
     assert "Compose" in body or "Docker" in body or "Podman" in body, f"Expected tools list, got: {body[:300]}"
+    popup.close()
 
 
 def test_concepts_renders(page):
@@ -60,15 +68,21 @@ def test_log_analysis_renders(page):
 
 
 def test_swagger_ui_accessible(page):
-    """'API 文档' link navigates to Swagger UI (proxied from backend)."""
+    """'API 文档' link opens Swagger UI in new tab (V2 uses target=_blank)."""
     page.goto(f"{WEB_URL}/docs", wait_until="domcontentloaded")
-    page.get_by_text("API 文档").click()
-    page.wait_for_timeout(5000)
 
-    body = page.locator("body").inner_text()
+    with page.expect_popup() as popup_info:
+        page.get_by_text("API 文档").click()
+
+    popup = popup_info.value
+    popup.wait_for_load_state("networkidle", timeout=20000)
+    popup.wait_for_timeout(5000)
+
+    body = popup.locator("body").inner_text()
     # SpringDoc Swagger UI shows "Explore", API definition selector, or raw spec
     assert any(w in body.lower() for w in ["swagger", "explore", "openapi", "api-docs"]), \
         f"Expected Swagger UI, got: {body[:300]}"
+    popup.close()
 
 
 def test_nonexistent_doc_shows_error(page):

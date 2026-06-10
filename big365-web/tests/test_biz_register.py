@@ -45,12 +45,12 @@ def test_register_business_via_ui(page):
     # Fill the first dimension row (already present in form)
     # columnName: find input with placeholder starting "例:" that's NOT "例: log_monitor" or "例: 日志监控"
     # The dimension columnName placeholder is "例: a"
-    col_inputs = page.get_by_placeholder("例: a")
+    col_inputs = page.get_by_placeholder("列名")
     if col_inputs.count() > 0:
         col_inputs.first.fill("x")
 
     # displayName: get input with placeholder "例: app" (or similar)
-    name_inputs = page.get_by_placeholder("例: app")
+    name_inputs = page.get_by_placeholder("显示名")
     if name_inputs.count() > 0:
         name_inputs.first.fill("测试维度")
 
@@ -68,20 +68,16 @@ def test_register_business_via_ui(page):
         page.wait_for_timeout(300)
         count += 1
 
-    # Set date range
-    date_inputs = page.locator('input[placeholder="20260101"]')
-    if date_inputs.count() >= 2:
-        date_inputs.nth(0).fill("20260101")
-        date_inputs.nth(1).fill("20260103")
+    # Set date range — V2 date inputs have no placeholder; find by label text
+    page.locator("text=开始日期").locator("..").locator("input").fill("20260101")
+    page.locator("text=结束日期").locator("..").locator("input").fill("20260103")
 
     # Submit (use exact match because "注册" also matches "注册新业务")
     page.get_by_role("button", name="注册", exact=True).click()
 
-    # Verify success toast
-    expect(page.get_by_text("✅").first).to_be_visible(timeout=15000)
-
-    # Verify new business appears in list
-    page.wait_for_timeout(1000)
+    # V2: no toast on success — modal closes and list refreshes
+    # Verify new business appears in list after modal closes
+    page.wait_for_timeout(2000)
     body = page.locator("body").inner_text()
     assert f"ui_test_{ts}" in body or "UI测试业务" in body, \
         f"Registered biz not found in list: {body[:300]}"

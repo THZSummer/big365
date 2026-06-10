@@ -293,8 +293,14 @@ public class SpaceService {
             }
         }
 
-        // 4. Determine date column for ordering (use today's date)
-        String dateColumn = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        // 4. Determine date column for ordering (use biz's dateTo)
+        BizInfo bizInfo = bizRepository.getBizInfo(bizName);
+        String dateColumn;
+        if (bizInfo != null && bizInfo.getDateTo() != null && !bizInfo.getDateTo().isEmpty()) {
+            dateColumn = bizInfo.getDateTo();
+        } else {
+            dateColumn = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        }
 
         // 5. Call repository
         Map<String, Object> result = spaceRepository.listCells(
