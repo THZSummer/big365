@@ -14,8 +14,8 @@ public class AsyncConfig {
     @Bean("demoDataExecutor")
     public Executor demoDataExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("demo-data-");
         executor.setWaitForTasksToCompleteOnShutdown(true);

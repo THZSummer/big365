@@ -48,11 +48,16 @@ public class SpaceController {
             @Parameter(description = "坐标参数（如 a=0&b=0）与日期参数 date=yyyyMMdd 或区间参数 dateFrom=yyyyMMdd&dateTo=yyyyMMdd")
             @RequestParam Map<String, String> allParams) {
 
-        // V2: Extract dateFrom / dateTo for time range queries
+        // V2/MVP: Extract date-related params FIRST to avoid being parsed as coordinates
         String dateFrom = allParams.remove("dateFrom");
         String dateTo = allParams.remove("dateTo");
+        String date = allParams.remove("date");
+        if (date == null || date.isBlank()) {
+            date = allParams.remove("Date"); // fallback
+        }
 
         // Convert remaining params to Map<String, Integer> (coordinates)
+        // Now allParams only contains dimension coordinates (e.g. a, b) — no date params
         Map<String, Integer> coordinates = new HashMap<>();
         for (Map.Entry<String, String> entry : allParams.entrySet()) {
             try {
@@ -71,16 +76,9 @@ public class SpaceController {
             return ApiResponse.ok(result);
         }
 
-        // V2: dateFrom only → treat as single-date query (equivalent to date parameter)
-        String date;
+        // V2: dateFrom only overrides the date parameter
         if (dateFrom != null && !dateFrom.isBlank()) {
             date = dateFrom;
-        } else {
-            // MVP: extract date parameter (remove from params to avoid coordinate parsing)
-            date = allParams.remove("date");
-            if (date == null || date.isBlank()) {
-                date = allParams.remove("Date"); // fallback
-            }
         }
 
         log.debug("Space query: biz={}, coords={}, date={}", biz, coordinates, date);

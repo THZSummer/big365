@@ -30,12 +30,6 @@ public class DemoDataParameters {
     /** Batch size for writing */
     private int batchSize;
 
-    /**
-     * Create default parameters for a given scale.
-     * small:   100-1000 rows,   2 apps,  5 endpoints
-     * medium:  ~10000 rows,      5 apps, 20 endpoints
-     * large:   ~100000 rows,    10 apps, 50 endpoints
-     */
     public static DemoDataParameters defaultsFor(String scale, DateRange dateRange) {
         DemoDataParametersBuilder builder = DemoDataParameters.builder()
                 .scale(scale)
@@ -46,20 +40,20 @@ public class DemoDataParameters {
         switch (scale != null ? scale.toLowerCase() : "small") {
             case "large":
                 return builder
-                        .totalRows(100_000)
+                        .totalRows(1000)
                         .appCount(10)
                         .endpointCount(50)
                         .build();
             case "medium":
                 return builder
-                        .totalRows(10_000)
+                        .totalRows(200)
                         .appCount(5)
                         .endpointCount(20)
                         .build();
             case "small":
             default:
                 return builder
-                        .totalRows(500)
+                        .totalRows(50)
                         .appCount(2)
                         .endpointCount(5)
                         .build();

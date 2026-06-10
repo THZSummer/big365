@@ -1,6 +1,7 @@
 package org.big365.api.demo;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import lombok.extern.slf4j.Slf4j;
 import org.big365.api.biz.BizRepository;
 import org.big365.api.common.BusinessException;
@@ -12,7 +13,8 @@ import org.big365.api.model.DimensionConcept;
 import org.big365.api.model.Vector;
 import org.big365.api.space.SpaceRepository;
 import org.big365.api.space.SpaceService;
-import org.springframework.scheduling.annotation.Async;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -30,6 +32,7 @@ public class DemoDataService {
     private final DemoDataGenerator demoDataGenerator;
     private final SpaceService spaceService;
     private final SpaceRepository spaceRepository;
+    @Qualifier("demoDataExecutor") private final Executor demoDataExecutor;
     private final BizRepository bizRepository;
 
     /**
@@ -64,6 +67,13 @@ public class DemoDataService {
         demoJobMapper.insert(tableName, job);
         log.info("Demo job created: biz={}, jobId={}, scale={}", bizName, jobId, scale);
 
+        // Trigger async generation via CompletableFuture (bypasses @Async proxy issues)
+        final String finalBizName = bizName;
+        final String finalJobId = jobId;
+        final String finalScale = scale;
+        final DateRange finalDateRange = request.getDateRange();
+        CompletableFuture.runAsync(() -> startGeneration(finalBizName, finalJobId, finalScale, finalDateRange), demoDataExecutor);
+
         return toResponse(job);
     }
 
@@ -72,7 +82,6 @@ public class DemoDataService {
      * Status flow: pending → initializing → generating → writing → summarizing → completed
      * On failure: → failed
      */
-    @Async("demoDataExecutor")
     public void startGeneration(String bizName, String jobId, String scale, DateRange dateRange) {
         String tableName = tableName(bizName);
         log.info("Demo generation starting: biz={}, jobId={}, scale={}", bizName, jobId, scale);

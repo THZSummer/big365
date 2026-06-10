@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.big365.api.biz.BizRepository;
 import org.big365.api.biz.BizService;
+import org.big365.api.dto.BizInfo;
 import org.big365.api.dto.BizRegisterRequest;
 import org.big365.api.dto.DateRange;
 import org.big365.api.dto.DimensionDef;
@@ -23,19 +24,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-/**
- * Default data initializer that runs on application startup to ensure the
- * demo_logs business exists with pre-populated demo data (~500 data points).
- *
- * <p>Execution order: {@code @Order(1)} ensures this runs after the
- * {@code initDatabase} runner ({@code @Order(0)}) which creates the
- * {@code big365_biz_registry_t} table.</p>
- *
- * <p>Idempotency: if demo_logs already exists, initialization is skipped.</p>
- *
- * <p>Graceful degradation: any failure during initialization is logged as an
- * error, but does not prevent the application from starting.</p>
- */
 @Component
 @Order(1)
 @Slf4j
@@ -52,13 +40,8 @@ public class DefaultDataInitializer implements CommandLineRunner {
     private final SpaceService spaceService;
     private final SpaceRepository spaceRepository;
 
-    /** Whether demo data initialization has completed (or was skipped because already exists). */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    /**
-     * Returns true if the demo data initializer has completed successfully
-     * or determined that demo data already exists (skip case).
-     */
     public boolean isInitialized() {
         return initialized.get();
     }
@@ -66,60 +49,60 @@ public class DefaultDataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            if (bizRepository.bizExists(DEMO_BIZ_NAME)) {
-                log.info("Default business '{}' already exists, skipping initialization", DEMO_BIZ_NAME);
+            if (!bizRepository.bizExists(DEMO_BIZ_NAME)) {
+                log.info("Default business '{}' not found. Starting initialization...", DEMO_BIZ_NAME);
+                BizRegisterRequest request = buildDemoLogsRequest();
+                bizService.register(request);
+                log.info("Business '{}' registered with {} dimensions, date range {}~{}",
+                        DEMO_BIZ_NAME, request.getDimensions().size(),
+                        request.getDateRange().getFrom(), request.getDateRange().getTo());
+                generateAndWriteData(request.getDateRange());
+                initialized.set(true);
+                log.info("Default business '{}' initialized successfully", DEMO_BIZ_NAME);
+                return;
+            }
+
+            long rowCount = countSpaceRows(DEMO_BIZ_NAME);
+            if (rowCount > 0) {
+                log.info("Default business '{}' already exists with {} rows, skipping", DEMO_BIZ_NAME, rowCount);
                 initialized.set(true);
                 return;
             }
 
-            log.info("Default business '{}' not found. Starting initialization...", DEMO_BIZ_NAME);
-            initializeDefaultBusiness();
+            log.warn("Default business '{}' exists but has 0 rows, re-initializing data", DEMO_BIZ_NAME);
+            BizInfo bizInfo = bizRepository.getBizInfo(DEMO_BIZ_NAME);
+            DateRange dateRange = DateRange.builder()
+                    .from(bizInfo.getDateFrom())
+                    .to(bizInfo.getDateTo())
+                    .build();
+            log.info("Using registered date range: {}~{}", dateRange.getFrom(), dateRange.getTo());
+            generateAndWriteData(dateRange);
             initialized.set(true);
-            log.info("Default business '{}' initialized successfully", DEMO_BIZ_NAME);
+            log.info("Default business '{}' data re-initialized successfully", DEMO_BIZ_NAME);
 
         } catch (Exception e) {
             log.error("Default data initialization failed: {}", e.getMessage(), e);
-            // Graceful degradation: do not prevent application startup
-            // initialized remains false
         }
     }
 
-    /**
-     * Register the demo_logs business, generate ~500 demo data points,
-     * and write them into the space table via {@link SpaceService#write}.
-     */
-    private void initializeDefaultBusiness() {
-        // 1. Build and execute business registration (creates tables + inserts metadata)
-        BizRegisterRequest request = buildDemoLogsRequest();
-        bizService.register(request);
-        log.info("Business '{}' registered with {} dimensions, date range {} ~ {}",
-                DEMO_BIZ_NAME,
-                request.getDimensions().size(),
-                request.getDateRange().getFrom(),
-                request.getDateRange().getTo());
-
-        // 2. Load dimension concepts from the newly created dimensions table
+    private void generateAndWriteData(DateRange dateRange) {
         List<DimensionConcept> dimensions = spaceRepository.getDimensionConcepts(DEMO_BIZ_NAME);
         if (dimensions.isEmpty()) {
-            log.error("No dimensions found for '{}' after registration — aborting data generation", DEMO_BIZ_NAME);
+            log.error("No dimensions found for '{}' — aborting data generation", DEMO_BIZ_NAME);
             return;
         }
         log.info("Loaded {} dimensions for data generation: {}",
                 dimensions.size(),
                 dimensions.stream().map(DimensionConcept::getColumnName).collect(Collectors.joining(", ")));
 
-        // 3. Create generation parameters (small scale → ~500 rows)
-        DemoDataParameters params = demoDataGenerator.createParameters(
-                "small", request.getDateRange(), dimensions);
-        log.info("Demo data parameters: scale={}, totalRows={}, batchSize={}",
-                params.getScale(), params.getTotalRows(), params.getBatchSize());
+        DemoDataParameters params = demoDataGenerator.createParameters("small", dateRange, dimensions);
+        log.info("Demo data parameters: scale={}, totalRows={}, batchSize={}, dateRange={}~{}",
+                params.getScale(), params.getTotalRows(), params.getBatchSize(),
+                dateRange.getFrom(), dateRange.getTo());
 
-        // 4. Generate all vectors in a single batch
-        List<Vector> vectors = demoDataGenerator.generateBatch(
-                params.getTotalRows(), params, dimensions);
+        List<Vector> vectors = demoDataGenerator.generateBatch(params.getTotalRows(), params, dimensions);
         log.info("Generated {} demo data vectors", vectors.size());
 
-        // 5. Write each vector through SpaceService (cascade update into space table)
         int successCount = 0;
         int failCount = 0;
         for (Vector vec : vectors) {
@@ -136,28 +119,34 @@ public class DefaultDataInitializer implements CommandLineRunner {
             }
         }
 
-        log.info("Demo data write completed: total={}, success={}, failed={}",
-                vectors.size(), successCount, failCount);
+        log.info("Demo data write completed: total={}, success={}, failed={}", vectors.size(), successCount, failCount);
         if (failCount > 0) {
             log.warn("{} out of {} demo data writes failed — space table may have partial data",
                     failCount, vectors.size());
         }
     }
 
-    /**
-     * Build the registration request for the demo_logs business.
-     *
-     * <p>Dimensions:</p>
-     * <ul>
-     *   <li>app: 1~3 (applications)</li>
-     *   <li>endpoint: 1~5 (API endpoints)</li>
-     *   <li>statusCode: 200~500 (HTTP status codes)</li>
-     *   <li>env: 1~2 (environments)</li>
-     *   <li>region: 1~3 (geographic regions)</li>
-     * </ul>
-     *
-     * <p>Date range: 30 days back from today.</p>
-     */
+    private long countSpaceRows(String bizName) {
+        try {
+            List<DimensionConcept> dims = spaceRepository.getDimensionConcepts(bizName);
+            if (dims.isEmpty()) {
+                return 0L;
+            }
+            List<String> coordColumns = dims.stream()
+                    .map(DimensionConcept::getColumnName)
+                    .collect(Collectors.toList());
+            Map<String, Object> result = spaceRepository.listCells(bizName, coordColumns, null, 1, 1, "id");
+            Object totalObj = result.get("total");
+            if (totalObj instanceof Number) {
+                return ((Number) totalObj).longValue();
+            }
+            return 0L;
+        } catch (Exception e) {
+            log.warn("Failed to count space rows for {}: {}", bizName, e.getMessage());
+            return 0L;
+        }
+    }
+
     private BizRegisterRequest buildDemoLogsRequest() {
         LocalDate today = LocalDate.now();
         String dateTo = today.format(DTF);

@@ -28,13 +28,8 @@ public class DemoDataController {
         log.info("Demo job create: biz={}, scale={}, dateRange={}-{}",
                 biz, request.getScale(), request.getDateRange().getFrom(), request.getDateRange().getTo());
 
-        // 1. Create job record synchronously
+        // Create job and trigger async generation in one call
         DemoJobResponse response = demoDataService.createJob(biz, request);
-
-        // 2. Start async generation (returns immediately through @Async proxy)
-        demoDataService.startGeneration(biz, response.getJobId(),
-                request.getScale(), request.getDateRange());
-
         return ApiResponse.ok(response);
     }
 

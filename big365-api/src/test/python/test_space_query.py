@@ -15,6 +15,23 @@ import requests
 BIZ = SPACE_BIZ_NAME
 
 
+def setup_module():
+    """Register test biz if not already exists."""
+    r = requests.post(f"{BASE_URL}/biz/register", json={
+        "bizName": BIZ,
+        "bizLabel": "空间查询测试",
+        "dimensions": [
+            {"columnName": "a", "displayName": "应用", "leafMin": 1, "leafMax": 10},
+            {"columnName": "b", "displayName": "接口", "leafMin": 1, "leafMax": 100}
+        ],
+        "dateRange": {"from": "20260101", "to": "20260105"}
+    })
+    if r.status_code != 200:
+        data = r.json()
+        if data.get("code") != "BIZ_ALREADY_EXISTS":
+            print(f"Setup warning: {r.status_code} {r.text}")
+
+
 def test_grand_total_query():
     """Grand Total query (all coordinates = 0) should return a non-negative value."""
     r = requests.get(f"{BASE_URL}/{BIZ}/space/query", params={
