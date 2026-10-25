@@ -80,6 +80,7 @@ function SpacePage() {
   const [listPageNo, setListPageNo] = useState(1);
   const [listPageSize] = useState(20);
   const [dimFilter, setDimFilter] = useState('');
+  const [hideZero, setHideZero] = useState(true);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
 
@@ -90,7 +91,7 @@ function SpacePage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   // ── Accordion (V2) ──────────────────────────────────────────────
-  const [accordionOpen, setAccordionOpen] = useState(false);
+  const [accordionOpen, setAccordionOpen] = useState(true);
 
   // ── fetch dimensions ────────────────────────────────────────────
   const fetchDimensions = useCallback(() => {
@@ -232,6 +233,12 @@ function SpacePage() {
     },
     [bizName, dimensions.length, listPageSize, dimFilter],
   );
+
+  // ── Filter zero-value rows (client-side) ─────────────────────────
+  const displayData = hideZero
+    ? listData.filter((item) => item.value > 0)
+    : listData;
+  const displayTotal = hideZero ? displayData.length : listTotal;
 
   // Auto-fetch list when switching to list tab
   useEffect(() => {
@@ -738,6 +745,21 @@ function SpacePage() {
                 >
                   {listLoading ? '查询中...' : '搜索'}
                 </button>
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', borderRadius: '6px',
+                  border: '1px solid #ddd', fontSize: '13px',
+                  cursor: 'pointer', userSelect: 'none',
+                  background: hideZero ? '#e8f5e9' : '#fff',
+                }} title={hideZero ? '点击显示全部（含零值）' : '点击隐藏零值'}>
+                  <input
+                    type="checkbox"
+                    checked={hideZero}
+                    onChange={(e) => setHideZero(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  仅非零
+                </label>
               </div>
             </div>
           </div>
@@ -746,7 +768,7 @@ function SpacePage() {
           {listError && <ErrorBanner message={listError} onRetry={() => fetchList(listPageNo)} />}
 
           {/* Table */}
-          {!listLoading && !listError && listData.length === 0 && (
+          {!listLoading && !listError && displayData.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
               <p style={{ fontSize: '16px', marginBottom: '8px' }}>暂无数据</p>
               <p style={{ fontSize: '13px' }}>
@@ -761,7 +783,7 @@ function SpacePage() {
             </div>
           )}
 
-          {listData.length > 0 && (
+          {displayData.length > 0 && (
             <>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -769,12 +791,12 @@ function SpacePage() {
                     <tr style={{ background: '#f5f7fa', borderBottom: '2px solid #e0e0e0' }}>
                       <th style={thStyle}>坐标</th>
                       <th style={thStyle}>日期</th>
-                      <th style={{ ...thStyle, textAlign: 'right' }}>指标值</th>
+                      <th style={{ ...thStyle, textAlign: 'right' }}>数值</th>
                       <th style={{ ...thStyle, textAlign: 'center', width: '80px' }}>操作</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {listData.map((cell, idx) => (
+                    {displayData.map((cell, idx) => (
                       <tr
                         key={`${fmtCoords(cell.coordinates)}-${cell.date}-${idx}`}
                         style={{ borderBottom: '1px solid #eee', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}
@@ -824,7 +846,7 @@ function SpacePage() {
                   ← 上一页
                 </button>
                 <span style={{ fontSize: '13px', color: '#666' }}>
-                  第 <strong>{listPageNo}</strong>/{listTotalPages} 页 (共 {listTotal} 条)
+                  第 <strong>{listPageNo}</strong>/{listTotalPages} 页 (共 {listTotal} 条{hideZero && listTotal !== displayTotal ? `, 非零 ${displayTotal} 条` : ""})
                 </span>
                 <button
                   onClick={() => fetchList(listPageNo + 1)}

@@ -293,12 +293,26 @@ public class SpaceService {
             }
         }
 
-        // 4. Determine date column for ordering (use biz's dateTo)
+        // 4. Determine date column for ordering — pick column with the most non-zero rows
         BizInfo bizInfo = bizRepository.getBizInfo(bizName);
-        String dateColumn;
-        if (bizInfo != null && bizInfo.getDateTo() != null && !bizInfo.getDateTo().isEmpty()) {
+        String dateColumn = null;
+
+        if (bizInfo != null && bizInfo.getDateFrom() != null && bizInfo.getDateTo() != null) {
+            List<String> dateColumns = generateDateColumns(bizInfo.getDateFrom(), bizInfo.getDateTo());
+            // Iterate all date columns and pick the one with the most non-zero rows
+            long bestCount = 0;
+            for (String candidate : dateColumns) {
+                long count = spaceRepository.countNonZero(bizName, coordColumns, dimFilters, candidate);
+                if (count > bestCount) {
+                    bestCount = count;
+                    dateColumn = candidate;
+                }
+            }
+        }
+        if (dateColumn == null && bizInfo != null && bizInfo.getDateTo() != null && !bizInfo.getDateTo().isEmpty()) {
             dateColumn = bizInfo.getDateTo();
-        } else {
+        }
+        if (dateColumn == null) {
             dateColumn = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         }
 

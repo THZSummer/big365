@@ -131,4 +131,40 @@
         LIMIT 1
     </select>
 
+
+    <!-- Get the maximum value for a specific date column (same WHERE as listSpaceCells).
+         Used to check whether a date column has any non-zero data across all rows. -->
+    <select id="getMaxValue" resultType="long">
+        SELECT COALESCE(MAX(`${dateColumn}`), 0)
+        FROM `${tableName}`
+        <where>
+            <foreach collection="coordColumns" item="col">
+                AND `${col}` != 0
+            </foreach>
+            <if test="dimFilters != null and dimFilters.size() > 0">
+                <foreach collection="dimFilters" item="filter">
+                    AND `${filter.col}` = #{filter.val}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <!-- Count non-zero rows for a specific date column (same WHERE as getMaxValue).
+         Used to find the date column with the richest data. -->
+    <select id="countNonZero" resultType="long">
+        SELECT COUNT(*)
+        FROM `${tableName}`
+        <where>
+            `${dateColumn}` > 0
+            <foreach collection="coordColumns" item="col">
+                AND `${col}` != 0
+            </foreach>
+            <if test="dimFilters != null and dimFilters.size() > 0">
+                <foreach collection="dimFilters" item="filter">
+                    AND `${filter.col}` = #{filter.val}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
 </mapper>

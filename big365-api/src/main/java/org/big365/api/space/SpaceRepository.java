@@ -294,6 +294,69 @@ public class SpaceRepository {
         }
     }
 
+
+    /**
+     * Get the maximum value for a specific date column (same WHERE as listCells).
+     * Used to check whether a date column has any non-zero data across all rows.
+     *
+     * @param bizName       business name
+     * @param coordColumns  coordinate column names
+     * @param dimFilters    optional dimension-value filter map
+     * @param dateColumn    the date column to check
+     * @return maximum value, or 0 if all rows have 0 or no rows match
+     */
+    public long getMaxValue(String bizName, List<String> coordColumns,
+                             Map<String, Integer> dimFilters, String dateColumn) {
+        String tableName = tableName(bizName, "space_t");
+
+        List<Map<String, Object>> filterList = null;
+        if (dimFilters != null && !dimFilters.isEmpty()) {
+            filterList = dimFilters.entrySet().stream()
+                    .map(e -> Map.<String, Object>of("col", e.getKey(), "val", e.getValue()))
+                    .collect(Collectors.toList());
+        }
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("coordColumns", coordColumns);
+        params.put("dimFilters", filterList);
+        params.put("dateColumn", dateColumn);
+
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            return session.selectOne(SPACE_MAPPER + ".getMaxValue", params);
+        }
+    }
+    /**
+     * Count non-zero rows for a specific date column (same WHERE as getMaxValue).
+     * Used to find the date column with the richest data.
+     *
+     * @param bizName       business name
+     * @param coordColumns  coordinate column names
+     * @param dimFilters    optional dimension-value filter map
+     * @param dateColumn    the date column to check
+     * @return count of rows where the date column value > 0
+     */
+    public long countNonZero(String bizName, List<String> coordColumns,
+                             Map<String, Integer> dimFilters, String dateColumn) {
+        String tableName = tableName(bizName, "space_t");
+
+        List<Map<String, Object>> filterList = null;
+        if (dimFilters != null && !dimFilters.isEmpty()) {
+            filterList = dimFilters.entrySet().stream()
+                    .map(e -> Map.<String, Object>of("col", e.getKey(), "val", e.getValue()))
+                    .collect(Collectors.toList());
+        }
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("tableName", tableName);
+        params.put("coordColumns", coordColumns);
+        params.put("dimFilters", filterList);
+        params.put("dateColumn", dateColumn);
+
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            return session.selectOne(SPACE_MAPPER + ".countNonZero", params);
+        }
+    }
     static String tableName(String bizName, String suffix) {
         return "big365_swks_" + bizName + "_" + suffix;
     }
